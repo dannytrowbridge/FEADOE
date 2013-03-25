@@ -1816,8 +1816,19 @@ class join(object) :
             pass
 
             working_slave_gl = copy.copy(self.slave.face_gl)
+            # REMOVE ELEMENT_MID_EDGE NODES - USE ONLY CORNER NODES ON THE FACE
+            #  SO WE CAN GET WRITE WEIGHTED EQUATIONS IN BOTH PARAMETRIC DIRECTIONS
+            working_slave_gl = self.slave.block.mesh.get_grid_list_from_tags(GTAGS.ELEMENT_CORNER, working_slave_gl)
+
+            print 'CORNER SLAVE GRIDS...'
+            for si, sg in enumerate(working_slave_gl) :
+                print si, sg
+            pass
+
+
+            
             for mi, mg in enumerate(self.master.face_gl) :
-                print 'LOOKING AT MASTER GRID...', mg
+                print '\nLOOKING AT MASTER GRID...', mg
                 working_slave_gl.sort(key=lambda g : np.linalg.norm(g.v - mg.v))
                 pg = working_slave_gl[0] # THIS IS THE NEAREST SLAVE GRID
 
@@ -1828,24 +1839,28 @@ class join(object) :
                 print 'FOUND CLOSE SLAVE GRID :', pg
 
 
-
-
-
                 # WE ARE SITTING ON A POINT - WE HAVE AN 1 TO 1 RELATIONSHIP
                 if( dv < constants.TOL ) :
+                    print 'NEARLY IDENTTICAL SLAVE POINT - GOING TO MAP 1 TO 1  dv = ', dv
                     continue
                 pass
 
-                pg_uvw = [ pg.iu, pg.iv, pg.iw ]
+
+                pg_uvw =  np.zeros( (4, 3), dtype=np.int32 )
+                pg_uvw[0] = [ pg.iu, pg.iv, pg.iw ]
 
 
                 # TBD -- WE NEED TO CHECK IF WE ARE RIGHT ON THE EDGE OF AN ELEMENT 
 
+                # LOOK AT NEIGHBORING GRIDS IN THE FACE'S 2-D PARAMETER SPACE
+                #  AND FIND THE CLOSET ONES TO THE POINT OF THE MASTER FACE WE ARE CONSIDERING
+                i = 0
                 for dd in self.slave.face_dirs :
+                    i = i + 1
                     uvw = [None, None, None]
-                    uvw[dd] = pg_uvw[dd]
+                    uvw[dd] = pg_uvw[0][dd]
                     line_o_grids = self.slave.block.mesh.get_grid_list_from_indices(
-                        uvw[DIR.U], uvw[DIR.V], uvw[DIR.W], self.slave.face_gl )
+                        uvw[DIR.U], uvw[DIR.V], uvw[DIR.W], working_slave_gl)
 
                     if( pg in line_o_grids ) :
                         line_o_grids.remove(pg)
@@ -1853,11 +1868,66 @@ class join(object) :
 
                     line_o_grids.sort(key=lambda g : np.linalg.norm(g.v - pg.v))
                     npg = line_o_grids[0]
+                    pg_uvw[i] =  [ npg.iu, npg.iv, npg.iw ]
                     mg.partner_grids.add(npg)
                 pass
 
+                ## print 'PARTNER GRIDS... (#=', len(mg.partner_grids)
+                ## for tpg in mg.partner_grids :
+                ##     print tpg
+                ##     ell = list(tpg.el)
+                ##     print ' BELONGS TO ELEMENTS:'
+                ##     for ee in ell :
+                ##         print '  ', ee.id,
+                ##     pass
+                ##     print
+                ## pass
 
-                print 'PARTNER GRIDS...'
+
+                ## tes = pg.el
+                ## for tpg in mg.partner_grids :
+                ##     tes = tes.intersection(tpg.el)
+                ## pass
+                ## print 'COMMON ELEMENTS =  (#=',len(tes)
+                ## tel = list(tes)
+                ## for ee in tel :
+                ##     print '  ', ee.id,
+                ## pass
+                ## print
+            
+
+                # MAKE SURE THEY ALL BELONG TO THE SAME ELEMENT
+                tes = pg.el
+                for tpg in mg.partner_grids :
+                    tes = tes.intersection(tpg.el)
+                pass
+
+                if( len(tes) == 1 ) :
+                    if( len(mg.partner_grids) == 3 ) :
+                        # FIND THE DIAGONAL GRID ON THE ELEMENT FACE 
+                        duvw1 = pg_uvw[1] - pg_uvw[0]
+                        duvw2 = pg_uvw[2] - pg_uvw[0]
+                        #print 'DUVW1 = ', duvw1
+                        #print 'DUVW2 = ', duvw2
+                        pg_uvw[3] = pg_uvw[0] + duvw1 + duvw2
+                        #print pg_uvw
+                        npg = self.slave.block.mesh.gl[ pg_uvw[3][0], pg_uvw[3][1], pg_uvw[3][2] ]
+                        mg.partner_grids.add(npg)
+                        print 'DIAGONAL PARTNER...',
+                        print npg
+
+                        vv = mg.v - mg.partner_grids[0].v
+                        vv1 =  mg.partner_grids[1].v - mg.partner_grids[0].v
+                        vv1_uv = 
+                        vv2 =  mg.partner_grids[3].v - mg.partner_grids[2].v
+
+
+
+                        
+                    pass
+                pass
+
+                print 'PARTNER GRIDS... (#=', len(mg.partner_grids)
                 for tpg in mg.partner_grids :
                     print tpg
                     ell = list(tpg.el)
@@ -1868,12 +1938,11 @@ class join(object) :
                     print
                 pass
 
-
                 tes = pg.el
                 for tpg in mg.partner_grids :
                     tes = tes.intersection(tpg.el)
                 pass
-                print 'COMMON ELEMENTS = ',
+                print 'COMMON ELEMENTS =  (#=',len(tes)
                 tel = list(tes)
                 for ee in tel :
                     print '  ', ee.id,

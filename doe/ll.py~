@@ -1,0 +1,121 @@
+import numpy as np
+
+
+class doda(object) :
+    def __init__ (self, nm) :
+        self.name = nm
+    pass
+pass
+
+
+aa = doda('DO')
+bb = doda('DA')
+
+dl = []
+dl.append(bb)
+dl.append(aa)
+
+
+s = ', '.join([ dd.name for dd in dl ])
+
+
+print 's = |'+s+'|'
+
+
+a = set()
+a.add(4)
+a.add(9)
+a.add(13)
+
+b = set()
+b.add(5)
+b.add(9)
+b.add(3)
+
+sl = [ a, b ]
+
+print a.intersection(b)
+
+
+c= set()
+for s in sl :
+    print s
+    #c = c.intersection(s)
+    c = c.union(s)
+pass
+print c
+
+
+c= sl[0]
+for s in sl :
+    print s
+    c = c.intersection(s)
+
+pass
+print c
+#print sl[0]
+#print sl[1]
+
+
+
+
+
+
+
+
+
+
+
+#args = ( 'A', 'B', 'C')
+
+## args = []
+## args.append('A')
+## args.append('B')
+## args.append('C')
+
+## for i, a in enumerate(args) :
+##     print ' '*3, i, ')  = ', a
+## pass
+
+
+## q = {}
+
+## q['DUDE',12] = 'COW'
+## print q
+
+## q['DUDE', 12] = 'NOW'
+## print q
+
+#http://docs.scipy.org/doc/numpy/reference/generated/numpy.meshgrid.html
+
+nx, ny, nz = (21, 3, 5)
+x = np.linspace(0, 20, nx)
+y = np.linspace(-1, 1, ny)
+#z = np.linspace(-2, 2, nz)
+print 'x=', x
+print 'y=', y
+#print 'z=', z
+#print np.meshgrid.__doc__
+xv, yv = np.meshgrid(x, y)
+
+print 'xv=', xv
+print 'yv=', yv
+#print 'zv=', zv
+
+#xv, yv = np.meshgrid(x, y, sparse=True)  # make sparse output arrays
+#xv
+#yv
+
+
+
+
+#pl = [ np.zeros(3) ] * 4
+#pl[2] = np.array[ 4.5, 5.6, 6.7 ]
+
+pll = np.zeros( (4, 3 ) )
+
+pll[2] = [4.5, 5.6, 6.7 ]
+
+
+
+print pll
