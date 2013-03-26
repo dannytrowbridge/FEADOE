@@ -77,8 +77,6 @@ BTAGS = namedtuple('BTAGS',
                    block_tags, verbose = False)._make( int(2**i) for i in range(len(block_tags)) )
 
 
-print BTAGS
-
 grid_tags = [
     'CENTER_U',
     'CENTER_V',

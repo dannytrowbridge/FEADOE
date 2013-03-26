@@ -1589,6 +1589,24 @@ class join(object) :
     pass
 
     #----------------------------------------------------------------------------------------------------
+
+    @staticmethod
+    def distance_factors(sv, mv, ev) :
+        dms = mv - sv
+        dme = mv - ev
+        ldms = np.linalg.norm(dms)
+        ldme = np.linalg.norm(dme)
+        udms = dms / ldms
+        udme = dme / ldme
+        tl = ldms + ldme
+        fs = ldms / tl
+        fe = ldme / tl
+        return( fs, fe, udms, udme)
+    pass
+
+
+
+    #----------------------------------------------------------------------------------------------------
     # ASSOCIATES THE GRIDS ON THE MORE DENSE HINGE LINE (MASTER) WITH THE ONES ON THE LESS DENSE HINGE LINE (SLAVE)
     def find_partners(self) :
         print '>>> TOP >>> ', here()
@@ -1866,6 +1884,9 @@ class join(object) :
                         line_o_grids.remove(pg)
                     pass
 
+                    # ^^^ REMOVE THE GRIDS THAT DO NOT REFERENCE ANY OF THE ELEMENTS AS THE FIRST PARTNER GRID
+                    line_o_grids = filter( lambda g : len(set(pg.el).intersection(set(g.el))) != 0, line_o_grids)
+
                     line_o_grids.sort(key=lambda g : np.linalg.norm(g.v - pg.v))
                     npg = line_o_grids[0]
                     pg_uvw[i] =  [ npg.iu, npg.iv, npg.iw ]
@@ -1897,6 +1918,7 @@ class join(object) :
             
 
                 # MAKE SURE THEY ALL BELONG TO THE SAME ELEMENT
+                #  NOT SURE WE NEED TO DO THIS ANY MORE SINCe WE ADDED THe FILTER ABOVE- SEE LINE MARKED ^^
                 tes = pg.el
                 for tpg in mg.partner_grids :
                     tes = tes.intersection(tpg.el)
@@ -1911,18 +1933,50 @@ class join(object) :
                         #print 'DUVW2 = ', duvw2
                         pg_uvw[3] = pg_uvw[0] + duvw1 + duvw2
                         #print pg_uvw
-                        npg = self.slave.block.mesh.gl[ pg_uvw[3][0], pg_uvw[3][1], pg_uvw[3][2] ]
-                        mg.partner_grids.add(npg)
+                        dpg = self.slave.block.mesh.gl[ pg_uvw[3][0], pg_uvw[3][1], pg_uvw[3][2] ]
+                        mg.partner_grids.add(dpg)
                         print 'DIAGONAL PARTNER...',
-                        print npg
+                        print dpg
 
-                        vv = mg.v - mg.partner_grids[0].v
-                        vv1 =  mg.partner_grids[1].v - mg.partner_grids[0].v
-                        vv1_uv = 
-                        vv2 =  mg.partner_grids[3].v - mg.partner_grids[2].v
+                        vv = mg.v - pg.v
+                        
+                        vv1 =  mg.partner_grids[1].v - pg.v
+                        vv1_uv = vv1 / np.linalg.norm(vv1)
+                        vvonvv1 = vv.dot(vv1_uv) * vv1_uv
+
+                        vv2 =  mg.partner_grids[2].v - pg.v
+                        vv2_uv = vv2 / np.linalg.norm(vv2)
+                        vvonvv2 = vv.dot(vv2_uv) * vv2_uv
+
+                        vv = mg.v - dpg.v
+
+                        vv3 =  mg.partner_grids[1].v - dpg.v
+                        vv3_uv = vv3 / np.linalg.norm(vv1)
+                        vvonvv3 = vv.dot(vv3_uv) * vv3_uv
+                        
+                        vv4 =  mg.partner_grids[2].v - dpg.v
+                        vv4_uv = vv4 / np.linalg.norm(vv4)
+                        vvonvv4 = vv.dot(vv4_uv) * vv4_uv
+
+                        # 1 & 3 OPPOSITE SIDES
+                        vv01_frac = len(vvonvv1) / len(vv1)
+                        vv10_frac = 1.0 - vv01_frac
+                        vv32_frac = len(vvonvv3) / len(vv3)
+                        vv23_frac = 1.0 - vv32_frac
+
+                        p1 = pg.v + vv01_frac * vv1
+                        p3 = npg.v + vv32_frac * vv3
+                        
 
 
+                        
+                        # 2 & 4 OPPOSITE SIDES
+                        vv02_frac = len(vvonvv2) / len(vv2)
+                        vv20_frac = 1.0 - vv02_frac
+                        vv31_frac = len(vvonvv4) / len(vv4)
+                        vv13_frac = 1.0 - vv31_frac
 
+                        
                         
                     pass
                 pass
@@ -2229,14 +2283,18 @@ class model(object) :
         print 'MINS =', mins
         
         ax.legend()
-        #ax.set_xlim3d(mins[0], maxs[0])
-        #ax.set_ylim3d(mins[1], maxs[1])
-        #ax.set_zlim3d(mins[2], maxs[2])
-        lo = min(mins) - 0.1 * abs(min(mins))
-        hi = max(maxs) + 0.1 * abs(max(maxs))
-        ax.set_xlim3d(lo, hi)
-        ax.set_ylim3d(lo, hi)
-        ax.set_zlim3d(lo, hi)
+
+        ## lo = min(mins) - 0.1 * abs(min(mins))
+        ## hi = max(maxs) + 0.1 * abs(max(maxs))
+        ## ax.set_xlim3d(lo, hi)
+        ## ax.set_ylim3d(lo, hi)
+        ## ax.set_zlim3d(lo, hi)
+
+        vlo = mins - 0.1 * abs(mins)
+        vhi = maxs + 0.1 * abs(maxs)
+        ax.set_xlim3d(vlo[0], vhi[0])
+        ax.set_ylim3d(vlo[1], vhi[1])
+        ax.set_zlim3d(vlo[2], vhi[2])
 
         plt.show()
     pass
