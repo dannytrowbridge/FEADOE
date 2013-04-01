@@ -110,6 +110,7 @@ grid_tags = [
     'HINGED_EXTRA',
     'MERGED',
     'MERGED_FACE',
+    'MERGED_EXTRA',
     'REMOVED',
     'EXPANDED_PARENT',
     'EXPANDED',

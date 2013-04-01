@@ -1406,12 +1406,18 @@ class join_face(object) :
         # THIS IS NOW A DICTIONARY WHOSE INDEX IS THE CORRESPONDING MASTER GRID OBJECT
         self.grid_associations = {}
         
+        #self.partner_grids = {} # THIS IS NOW A DICTIONARY WHOSE INDEX IS THE CORRESPONDING MASTER GRID OBJECT
+         
+        #self.partner_factors = {} # THIS IS NOW A DICTIONARY WHOSE INDEX IS THE CORRESPONDING MASTER GRID OBJECT
+
         # GRID LIST OF GRIDS ON HINGE LINE - FOUND NO MATTER WHAT KIND OF JOIN IT IS
         self.gl = []
-        self.ortho_gl = []
         
         # GRID LIST OF GRIDS ON JOIN FACE - FOUND NO MATTER WHAT KIND OF JOIN IT IS
         self.face_gl = []
+
+        # GRID LIST OF GRIDS ON LINE ON FACE ORTHOGONAL TO HINGE LINE
+        #self.ortho_gl = []
 
         self.edge_vector = np.zeros(3)
         self.ortho_vector = np.zeros(3)
@@ -1654,12 +1660,12 @@ class join(object) :
         
             a_hinge_grid_tag, a_ortho_grid_tag, a_ortho_grid_select_tag = join.get_face_hinge_line_tags(self.jface_a.face_grid_tag, self.jface_a.hinge_dir)
             self.jface_a.gl = ma.get_grid_list_from_tags(a_hinge_grid_tag, self.jface_a.face_gl)
-            self.jface_a.ortho_gl =  ma.get_grid_list_from_tags(a_ortho_grid_tag, self.jface_a.face_gl)
+            a.ortho_gl =  ma.get_grid_list_from_tags(a_ortho_grid_tag, self.jface_a.face_gl)
 
 
             b_hinge_grid_tag, b_ortho_grid_tag, b_ortho_grid_select_tag = join.get_face_hinge_line_tags(self.jface_b.face_grid_tag, self.jface_b.hinge_dir)
             self.jface_b.gl = mb.get_grid_list_from_tags(b_hinge_grid_tag, self.jface_b.face_gl)
-            self.jface_b.ortho_gl =  ma.get_grid_list_from_tags(b_ortho_grid_tag, self.jface_b.face_gl)
+            b.ortho_gl =  ma.get_grid_list_from_tags(b_ortho_grid_tag, self.jface_b.face_gl)
 
             for g in self.jface_a.face_gl : 
                 g.tags |= GTAGS.HINGED_FACE
@@ -1823,7 +1829,7 @@ class join(object) :
             
             self.jface_a.edge_vector = a_end_grid.v - a_start_grid.v
             
-            a_ortho_grid_list = ma.get_grid_list_from_tags( a_ortho_grid_select_tag, self.jface_a.ortho_gl )
+            a_ortho_grid_list = ma.get_grid_list_from_tags( a_ortho_grid_select_tag, a_ortho_gl )
             if( len(a_ortho_grid_list) != 1 ) :
                 print 'ERROR:  COULD NOT FIND A UNIQUE ORTHO GRID POINT DO DEFINE FACE COORDINATE SYSTEM ', self.jface_a.name
                 print '  Number of grids found = ', len(a_ortho_grid_list)
@@ -1860,7 +1866,7 @@ class join(object) :
             
             self.jface_b.edge_vector = b_end_grid.v - b_start_grid.v
 
-            b_ortho_grid_list = mb.get_grid_list_from_tags( b_ortho_grid_select_tag, self.jface_b.ortho_gl )
+            b_ortho_grid_list = mb.get_grid_list_from_tags( b_ortho_grid_select_tag, b_ortho_gl )
             if( len(b_ortho_grid_list) != 1 ) :
                 print 'ERROR:  COULD NOT FIND A UNIQUE ORTHO GRID POINT TO DEFINE FACE COORDINATE SYSTEM ', self.jface_b.name
                 print '  Number of grids found = ', len(b_ortho_grid_list)
@@ -1920,7 +1926,7 @@ class join(object) :
             for mi, mg in enumerate(self.master.gl) :
                 
                 gmass = grid_mesh_association(mg, self.master)
-                self.master.grid_associations[mg] = gmass
+                self.master.grid_association[mg] = gmass
                 
                 # NOT SURE WE NEED THE EXTRA GRIDS BUT WE WILL KEEP THEM FOR NOW
                 eg = grid(-1 * mg.id, mg.v[DIR.U], mg.v[DIR.V], mg.v[DIR.W])
@@ -2219,39 +2225,17 @@ class join(object) :
                         # USING INDICES - FIND THE DIAGONAL GRID ON THE ELEMENT FACE 
                         duvw1 = pg_uvw[1] - pg_uvw[0]
                         duvw2 = pg_uvw[2] - pg_uvw[0]
-                        print 'DUVW1 = ', duvw1
-                        print 'DUVW2 = ', duvw2
+                        #print 'DUVW1 = ', duvw1
+                        #print 'DUVW2 = ', duvw2
                         pg_uvw[3] = pg_uvw[0] + duvw1 + duvw2
-                        print pg_uvw
+                        #print pg_uvw
                         dpg = self.slave.block.mesh.gl[ pg_uvw[3][0], pg_uvw[3][1], pg_uvw[3][2] ]
                         gmass.add_partner(dpg)
-
-                        print 'DIAGONAL PARTNER...',
-                        print dpg
+                        #mg.partner_grids.append(dpg)
+                        #print 'DIAGONAL PARTNER...',
+                        #print dpg
 
                         gmass.interp_coef_2d_field_from_corner_points()
-
-                        mduvw1 = duvw1 / 2
-                        mduvw2 = duvw2 / 2
-                        mpg_uvw1 = pg_uvw[0] + mduvw1
-                        mpg_uvw2 = pg_uvw[0] + mduvw2
-                        print 'MDUVW1 = ', mduvw1
-                        print 'MDUVW2 = ', mduvw2
-                        print 'MGP_UVW1 =', mpg_uvw1
-                        print 'MGP_UVW2 =', mpg_uvw2
-                        print 'midside grid 0->1',  self.slave.block.mesh.gl[ mpg_uvw1[0], mpg_uvw1[1], mpg_uvw1[2] ]
-                        print 'midside grid 0->2',  self.slave.block.mesh.gl[ mpg_uvw2[0], mpg_uvw2[1], mpg_uvw2[2] ]
-
-                        tese = tes.pop()
-                        fgl = self.slave.block.mesh.get_grid_list_from_tags( self.slave.face_grid_tag, tese.gl )
-                        fgl = self.slave.block.mesh.get_grid_list_from_tags( GTAGS.ELEMENT_MID_EDGE, fgl )
-                        print 'FGL='
-                        for g in fgl :
-                            print '         ', g
-                        pass
-                        
-
-
 
                     pass
                 pass

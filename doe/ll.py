@@ -3,6 +3,7 @@ import numpy as np
 from mpl_toolkits.mplot3d import axes3d
 import matplotlib.pyplot as plt
 from matplotlib import cm
+import operator
 
 import constants
 from constants import LOC, DIR, DOF, BTAGS, GTAGS, ETAGS, FTAGS, JTAGS, FACE_GRID_INDICES
@@ -54,8 +55,8 @@ def distance_factors(sv, mv, ev) :
     if( ldem != 0.0 ) :  udem = dem / ldem
     
     tl = ldsm + ldem
-    fs = ldsm / tl
-    fe = ldem / tl
+    fs = 1.0 - ldsm / tl
+    fe = 1.0 - ldem / tl
     #return( fs, fe, udse, udsm, udem)
     return( fs, fe )
 pass
@@ -82,13 +83,14 @@ def project_and_calc_distance_factors(sv, mv, ev) :
     if( ldem != 0.0 ) :  udem = dem / ldem
 
     dsm_on_dse = dsm.dot(udse) * udse
-    fs = np.linalg.norm(dsm_on_dse) / ldse
+    fs = 1.0 - np.linalg.norm(dsm_on_dse) / ldse
     fe = 1.0 - fs
     return( fs, fe, dsm_on_dse)
 pass
 
 
 def project_new_point_and_calc_distance_factors(sv, mv, ev) :
+    print sv, '-=>', ev
     dse = ev - sv
     dsm = mv - sv
     dem = mv - ev
@@ -106,7 +108,7 @@ def project_new_point_and_calc_distance_factors(sv, mv, ev) :
     if( ldem != 0.0 ) :  udem = dem / ldem
 
     dsm_on_dse = dsm.dot(udse) * udse
-    fs = np.linalg.norm(dsm_on_dse) / ldse
+    fs = 1.0 - np.linalg.norm(dsm_on_dse) / ldse
     fe = 1.0 - fs
     npp = sv + dsm_on_dse
     return( fs, fe, npp)
@@ -120,13 +122,21 @@ def interp_coef_2d_field_from_corner_points(m, pl) :
     f32, f23, np32 = project_new_point_and_calc_distance_factors(pl[3], m, pl[2])
     fm01, fm32 = distance_factors(np01, m, np32)
 
+    print 'f01 = ', f01, '   f10 =', f10, '   NP01 =', np01
+    print 'f32 = ', f32, '   f23 =', f23, '   NP32 =', np32
+    print 'fm01 = ', fm01, '   fm32 = ', fm32
+    
     #m1 = fm01 * ( f01 * disp[0] +  f10 * disp[1] ) + fm32 * ( f23 * disp[2] + f32 * disp[3] )
     #print 'M1 =', m1
 
 
-    f13, f31, np13 = project_new_point_and_calc_distance_factors(pl[1], m, pl[3])
+    f31, f13, np31 = project_new_point_and_calc_distance_factors(pl[3], m, pl[1])
     f02, f20, np02 = project_new_point_and_calc_distance_factors(pl[0], m, pl[2])
-    fm13, fm02 = distance_factors(np13, m, np02)
+    fm31, fm02 = distance_factors(np31, m, np02)
+
+    print 'f31 = ', f31, '   f13 =', f13, '   NP31 =', np31
+    print 'f02 = ', f02, '   f20 =', f20, '   NP02 =', np02
+    print 'fm02 = ', fm02, '   fm31 = ', fm31
 
     #m2 = fm02 * ( f02 * disp[0] +  f20 * disp[2] ) + fm13 * ( f13 * disp[1] + f31 * disp[3] )
     
@@ -134,13 +144,13 @@ def interp_coef_2d_field_from_corner_points(m, pl) :
 
     #m = 1.0 / 2.0 * ( m1 + m2 )
 
-    SOMETHING IS NOT RIGHT HERE factor is indicating coincident grid index 2 instead it should be 1
+    #SOMETHING IS NOT RIGHT HERE factor is indicating coincident grid index 2 instead it should be 1
 
     factors = np.zeros(4)
     factors[0] = ( fm01 * f01 + fm02 * f02 ) / 2.0
-    factors[1] = ( fm01 * f10 + fm13 * f13 ) / 2.0
+    factors[1] = ( fm01 * f10 + fm31 * f13 ) / 2.0
     factors[2] = ( fm32 * f23 + fm02 * f20 ) / 2.0
-    factors[3] = ( fm32 * f32 + fm13 * f31 ) / 2.0
+    factors[3] = ( fm32 * f32 + fm31 * f31 ) / 2.0
 
     return(factors)
 pass
@@ -175,21 +185,60 @@ class doda(object) :
     def __init__ (self, nm) :
         self.name = nm
     pass
+    def __repr__(self):
+        s = str(self.name)
+        return(s)
+    pass
 pass
 
 
-aa = doda('DO')
-bb = doda('DA')
+aa = doda(4)
+bb = doda(9)
+cc = doda(12)
+dd = doda(2)
 
 dl = []
-dl.append(bb)
 dl.append(aa)
+dl.append(bb)
+dl.append(cc)
+dl.append(dd)
+
+print dl
+
+#s = ', '.join([ dd.name for dd in dl ])
+#print 's = |'+s+'|'
 
 
-s = ', '.join([ dd.name for dd in dl ])
+
+dt = reduce(lambda x, y: max([x, y], key=lambda z : z.name), dl) 
+
+#dt = reduce(lambda x, y: filter(min([x, y], key=lambda z : z.name), [x, y]), dl) 
+print 'dt=', dt
+
+#dt = max(dl, key=operator.itemgetter(1))
+dt = min( dl, key=lambda x : x.name )
+
+print 'dt.name=', dt.name
+print 'dt=', dt
 
 
-print 's = |'+s+'|'
+for n in range(12) :
+    neq = n + 2
+    ln = int(neq / 2.0) + neq % 2
+    print 'NEQ =', neq, 'LN = ', ln
+pass
+
+
+s = 'A={}, B={}, C={}'
+
+a = s.format(4, 'R', 23.6)
+print a
+
+
+
+
+
+sys.exit()
 
 
 a = set()
@@ -284,36 +333,70 @@ print 'yv=', yv
 
 pl = np.zeros( (4, 3) )
 
-pl[2] = [4.5, 5.6, 6.7 ]
+#pl[2] = [4.5, 5.6, 6.7 ]
 
 
 
-print pl
+#print pl
 #m = np.array([ 0.0, 1.16666666667, -0.5 ])
 #m = np.array([ 0.0, 1.25, -0.5 ])
-m = np.array([ 0.0, 1.5, 0.0 ])
+m = np.array([ 0.0, 1.5, -0.5 ])
 
+
+# THE FIRST POINT SHOULD BE THE POINT NEAREST THE MASTER POINT
+# THE LAST POINT SHOULD THE THE ONE CATTY-CORNER (DIAGNONAL)
 pl[0] = np.array([ 0.0, 1.5, -0.5 ])
 pl[1] = np.array([ 0.0, 1.5, 0.0 ])
 pl[2] = np.array([ 0.0, 1.0, -0.5 ])
 pl[3] = np.array([ 0.0, 1.0, 0.0 ])
 
+
+
+print 'POINTS =', pl
+print 'MASTER POINT =', m
+
+print
+
 disp = np.zeros( (4, 3) )
 
 disp[0] = np.array([ 1.0, 0.0, 0.0 ])
-disp[1] = np.array([ 1.0, 0.0, 0.0 ])
-disp[2] = np.array([ 2.0, 0.0, 0.0 ])
-disp[3] = np.array([ 2.0, 0.0, 0.0 ])
+disp[1] = np.array([ 2.0, 0.0, 0.0 ])
+disp[2] = np.array([ 3.0, 0.0, 0.0 ])
+disp[3] = np.array([ 4.0, 0.0, 0.0 ])
 
 
 print 'DISP = ', disp
-ffs = np.array([4])
+
+#ffs = np.array([4])
 ffs = interp_coef_2d_field_from_corner_points(m, pl)
 
 print 'FACTORS = ', ffs
 
 mdisp = ffs[0] * disp[0] + ffs[1] * disp[1] + ffs[2] * disp[2] + ffs[3] * disp[3]
 print 'MDISP =', mdisp
+
+for i in range(4) :
+    print '-'*80
+    m = pl[i]
+    print 'I = ', i, ' ', m
+    ffs = interp_coef_2d_field_from_corner_points(m, pl)
+
+    print 'FACTORS = ', ffs
+
+    mdisp = ffs[0] * disp[0] + ffs[1] * disp[1] + ffs[2] * disp[2] + ffs[3] * disp[3]
+    print 'MDISP =', mdisp
+pass
+
+
+
+
+
+
+
+sys.exit(0)
+
+
+
 
 
 f01, f10, np01 = project_new_point_and_calc_distance_factors(pl[0], m, pl[1])

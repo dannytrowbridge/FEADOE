@@ -5,6 +5,12 @@
 *.log
 *.dat
 *.frd
+*~
+*.sta
+*.csv
+spooles.out
+
+
 
 
 #################

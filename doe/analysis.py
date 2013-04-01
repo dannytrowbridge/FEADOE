@@ -13,15 +13,16 @@ import gfea_model as fea
 from doe_driver import design_of_experiments
 from ggen_util import print_timing, enum, here, now, interpolate
 
-SOLVER = 'E:/DEV/pywork/noz/calculix/do_ccx.bat'
+SOLVER = 'E:/DEV/pywork/FEADOE/calculix/do_ccx.bat'
 
 if( 'PDRIVE' in os.environ ) :
     PDRIVE = os.environ['PDRIVE']
-    SOLVER = PDRIVE + '/DEV/pywork/noz/calculix/do_ccx.bat'
+    #SOLVER = PDRIVE + '/DEV/pywork/FEADOE/calculix/do_ccx.bat'
+    SOLVER = PDRIVE + '/DEV/pywork/FEADOE/calculix/do_ccx.bat'
 pass
 
-if( 'SOLVER' in os.environ ) :
-    SOLVER = os.environ['SOLVER']
+if( 'FEADOE_SOLVER' in os.environ ) :
+    SOLVER = os.environ['FEADOE_SOLVER']
 pass
 
 #print 'THIS MODULE:', __name__, ' LIVES AT', os.path.realpath(__file__)
