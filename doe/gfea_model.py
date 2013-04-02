@@ -139,7 +139,7 @@ pass
 ##     rgl = []
 ##     if( igl is not None ) :
 ##         rgl = igl
-##         rgl = filter( ( lambda gg: gg is not None ), rgl)
+#         rgl = filter( ( lambda gg: gg is not None ), rgl)
 ##         rgl = filter( ( lambda gg: not ( gg.tags & tag ) ), rgl )
 ##     pass
 ##     return(rgl)
@@ -1347,7 +1347,7 @@ class grid_mesh_association(object) :
 
     #----------------------------------------------------------------------------------------------------
 
-    def interp_coef_2d_field_from_corner_points(self) :
+    def interp_coef_2d_field_from_corner_points_ORIG(self) :
         
         f01, f10, np01 = project_new_point_and_calc_distance_factors(self.partner_grids[0].v,
                                                                      self.master_grid.v,
@@ -1382,6 +1382,124 @@ class grid_mesh_association(object) :
         self.partner_factors[self.partner_grids[1]] = ( fm01 * f10 + fm31 * f13 ) / 2.0
         self.partner_factors[self.partner_grids[2]] = ( fm32 * f23 + fm02 * f20 ) / 2.0
         self.partner_factors[self.partner_grids[3]] = ( fm32 * f32 + fm31 * f31 ) / 2.0
+
+    pass
+
+    #----------------------------------------------------------------------------------------------------
+    # TRY INCLUDING THE MIDSIDE NODES
+    def interp_coef_2d_field_from_corner_points(self) :
+        mef = np.zeros(8)
+        
+        f01, f10, np01 = project_new_point_and_calc_distance_factors(self.partner_grids[0].v,
+                                                                     self.master_grid.v,
+                                                                     self.partner_grids[1].v)
+        
+        f32, f23, np32 = project_new_point_and_calc_distance_factors(self.partner_grids[3].v,
+                                                                     self.master_grid.v,
+                                                                     self.partner_grids[2].v)
+
+        fm01, fm32 = distance_factors(np01, self.master_grid.v, np32)
+
+
+        mef[0] += ( fm01 * f01 )
+        mef[1] += ( fm01 * f10 )
+        mef[2] += ( fm32 * f23 )
+        mef[3] += ( fm32 * f32 )
+        
+        #print 'f01 = ', f01, '   f10 =', f10, '   NP01 =', np01
+        #print 'f32 = ', f32, '   f23 =', f23, '   NP32 =', np32
+        #print 'fm01 = ', fm01, '   fm32 = ', fm32
+    
+
+
+
+        f31, f13, np31 = project_new_point_and_calc_distance_factors(self.partner_grids[3].v,
+                                                                     self.master_grid.v,
+                                                                     self.partner_grids[1].v)
+        
+        f02, f20, np02 = project_new_point_and_calc_distance_factors(self.partner_grids[0].v,
+                                                                     self.master_grid.v,
+                                                                     self.partner_grids[2].v)
+
+        fm31, fm02 = distance_factors(np31, self.master_grid.v, np02)
+
+
+        mef[0] += ( fm02 * f02 )
+        mef[1] += ( fm31 * f13 )
+        mef[2] += ( fm02 * f20 )
+        mef[3] += ( fm31 * f31 )
+        
+        #print 'f31 = ', f31, '   f13 =', f13, '   NP31 =', np31
+        #print 'f02 = ', f02, '   f20 =', f20, '   NP02 =', np02
+        #print 'fm02 = ', fm02, '   fm31 = ', fm31
+
+
+        if( f01 <= f10 )  : # PROJECTED EDGE POINT IS BETWEEN X0 AND X4 (MID SIDE NODE: X0->X4->X1 )
+            f04, f40 = distance_factors(self.partner_grids[0].v, np01, self.partner_grids[4].v)
+            mef[0] += ( fm01 * f04 )
+            mef[4] += ( fm01 * f40 )
+        else :
+            f14, f41 = distance_factors(self.partner_grids[1].v, np01, self.partner_grids[4].v)
+            mef[1] += ( fm01 * f14 )
+            mef[4] += ( fm01 * f41 )
+        pass
+
+
+        if( f02 <= f20 )  : # PROJECTED EDGE POINT IS BETWEEN X0 AND X5 (MID SIDE NODE: X0->X5->X2 )
+            f05, f50 = distance_factors(self.partner_grids[0].v, np02, self.partner_grids[5].v)
+            mef[0] += ( fm02 * f05 )
+            mef[5] += ( fm02 * f50 )
+        else :
+            f25, f52 = distance_factors(self.partner_grids[2].v, np02, self.partner_grids[5].v)
+            mef[2] += ( fm02 * f25 )
+            mef[5] += ( fm02 * f52 )
+        pass
+
+
+
+        if( f32 <= f23 )  : # PROJECTED EDGE POINT IS BETWEEN X3 AND X6 (MID SIDE NODE: X3->X6->X2 )
+            f36, f63 = distance_factors(self.partner_grids[3].v, np32, self.partner_grids[6].v)
+            mef[3] += ( fm32 * f36 )
+            mef[6] += ( fm32 * f63 )
+        else :
+            f26, f62 = distance_factors(self.partner_grids[2].v, np32, self.partner_grids[6].v)
+            mef[2] += ( fm32 * f26 )
+            mef[6] += ( fm32 * f62 )
+        pass
+
+
+        if( f31 <= f13 )  : # PROJECTED EDGE POINT IS BETWEEN X3 AND X7 (MID SIDE NODE: X3->X7->X1 )
+            f37, f73 = distance_factors(self.partner_grids[3].v, np31, self.partner_grids[7].v)
+            mef[3] += ( fm31 * f37 )
+            mef[7] += ( fm31 * f73 )
+        else :
+            f17, f71 = distance_factors(self.partner_grids[1].v, np31, self.partner_grids[7].v)
+            mef[1] += ( fm31 * f17 )
+            mef[7] += ( fm31 * f71 )
+        pass
+
+            
+        # NORMAL ALL THE FACTORS
+        sum = 0.0
+        for i in range(8) :
+            sum += mef[i]
+        pass
+
+        for i in range(8) :
+            mef[i] = mef[i] / sum
+            self.partner_factors[self.partner_grids[i]] = mef[i]
+        pass
+
+
+
+
+
+
+
+        ## self.partner_factors[self.partner_grids[0]] = ( fm01 * f01 + fm02 * f02 ) / 2.0
+        ## self.partner_factors[self.partner_grids[1]] = ( fm01 * f10 + fm31 * f13 ) / 2.0
+        ## self.partner_factors[self.partner_grids[2]] = ( fm32 * f23 + fm02 * f20 ) / 2.0
+        ## self.partner_factors[self.partner_grids[3]] = ( fm32 * f32 + fm31 * f31 ) / 2.0
 
     pass
 
@@ -2153,7 +2271,7 @@ class join(object) :
                 pass
 
 
-                pg_uvw =  np.zeros( (4, 3), dtype=np.int32 )
+                pg_uvw =  np.zeros( (8, 3), dtype=np.int32 )
                 pg_uvw[0] = [ pg.uvw[DIR.U], pg.uvw[DIR.V], pg.uvw[DIR.W] ]
 
                 # TBD -- WE NEED TO CHECK IF WE ARE RIGHT ON THE EDGE OF AN ELEMENT 
@@ -2226,29 +2344,55 @@ class join(object) :
                         dpg = self.slave.block.mesh.gl[ pg_uvw[3][0], pg_uvw[3][1], pg_uvw[3][2] ]
                         gmass.add_partner(dpg)
 
-                        print 'DIAGONAL PARTNER...',
+                        print 'MASTER ='
+                        print mg
+                        print 'FIRST PARTNER...'
+                        print pg
+                        print 'SIDE PARTNERS...'
+                        print gmass.partner_grids[1]
+                        print gmass.partner_grids[2]
+                        print 'DIAGONAL PARTNER...'
                         print dpg
 
-                        gmass.interp_coef_2d_field_from_corner_points()
 
                         mduvw1 = duvw1 / 2
                         mduvw2 = duvw2 / 2
-                        mpg_uvw1 = pg_uvw[0] + mduvw1
-                        mpg_uvw2 = pg_uvw[0] + mduvw2
+                        pg_uvw[4] = pg_uvw[0] + mduvw1
+                        pg_uvw[5] = pg_uvw[0] + mduvw2
+                        pg_uvw[6] = pg_uvw[4] + duvw2
+                        pg_uvw[7] = pg_uvw[5] + duvw1
+                        
                         print 'MDUVW1 = ', mduvw1
                         print 'MDUVW2 = ', mduvw2
-                        print 'MGP_UVW1 =', mpg_uvw1
-                        print 'MGP_UVW2 =', mpg_uvw2
-                        print 'midside grid 0->1',  self.slave.block.mesh.gl[ mpg_uvw1[0], mpg_uvw1[1], mpg_uvw1[2] ]
-                        print 'midside grid 0->2',  self.slave.block.mesh.gl[ mpg_uvw2[0], mpg_uvw2[1], mpg_uvw2[2] ]
-
-                        tese = tes.pop()
-                        fgl = self.slave.block.mesh.get_grid_list_from_tags( self.slave.face_grid_tag, tese.gl )
-                        fgl = self.slave.block.mesh.get_grid_list_from_tags( GTAGS.ELEMENT_MID_EDGE, fgl )
-                        print 'FGL='
-                        for g in fgl :
-                            print '         ', g
+                        print 'GP_UVW[4] =', pg_uvw[4]
+                        print 'GP_UVW[5] =', pg_uvw[5]
+                        print 'GP_UVW[6] =', pg_uvw[6]
+                        print 'GP_UVW[7] =', pg_uvw[7]
+                        
+                        for ii in range(4, 8) :
+                            gmass.add_partner( self.slave.block.mesh.gl[ pg_uvw[ii][0], pg_uvw[ii][1], pg_uvw[ii][2] ] )
                         pass
+
+                        print 'midside grid 0->1',  self.slave.block.mesh.gl[ pg_uvw[4][0], pg_uvw[4][1], pg_uvw[4][2] ]
+                        print 'midside grid 0->2',  self.slave.block.mesh.gl[ pg_uvw[5][0], pg_uvw[5][1], pg_uvw[5][2] ]
+                        print 'midside grid 3->2',  self.slave.block.mesh.gl[ pg_uvw[6][0], pg_uvw[6][1], pg_uvw[6][2] ]
+                        print 'midside grid 3->1',  self.slave.block.mesh.gl[ pg_uvw[7][0], pg_uvw[7][1], pg_uvw[7][2] ]
+
+                        gmass.interp_coef_2d_field_from_corner_points()
+                        
+
+                        ## tese = tes.pop()
+                        ## fgl = self.slave.block.mesh.get_grid_list_from_tags( self.slave.face_grid_tag, tese.gl )
+                        ## print 'ALL FGL='
+                        ## for g in fgl :
+                        ##     print '         ', g
+                        ## pass
+                        
+                        ## fgl = self.slave.block.mesh.get_grid_list_from_tags( GTAGS.ELEMENT_MID_EDGE, fgl )
+                        ## print 'FGL='
+                        ## for g in fgl :
+                        ##     print '         ', g
+                        ## pass
                         
 
 
@@ -2607,17 +2751,17 @@ class model(object) :
         
         ax.legend()
 
-        ## lo = min(mins) - 0.1 * abs(min(mins))
-        ## hi = max(maxs) + 0.1 * abs(max(maxs))
-        ## ax.set_xlim3d(lo, hi)
-        ## ax.set_ylim3d(lo, hi)
-        ## ax.set_zlim3d(lo, hi)
+        lo = min(mins) - 0.1 * abs(min(mins))
+        hi = max(maxs) + 0.1 * abs(max(maxs))
+        ax.set_xlim3d(lo, hi)
+        ax.set_ylim3d(lo, hi)
+        ax.set_zlim3d(lo, hi)
 
-        vlo = mins - 0.1 * abs(mins)
-        vhi = maxs + 0.1 * abs(maxs)
-        ax.set_xlim3d(vlo[0], vhi[0])
-        ax.set_ylim3d(vlo[1], vhi[1])
-        ax.set_zlim3d(vlo[2], vhi[2])
+        ## vlo = mins - 0.1 * abs(mins)
+        ## vhi = maxs + 0.1 * abs(maxs)
+        ## ax.set_xlim3d(vlo[0], vhi[0])
+        ## ax.set_ylim3d(vlo[1], vhi[1])
+        ## ax.set_zlim3d(vlo[2], vhi[2])
 
         plt.show()
     pass
