@@ -1347,48 +1347,49 @@ class grid_mesh_association(object) :
 
     #----------------------------------------------------------------------------------------------------
 
-    def interp_coef_2d_field_from_corner_points_ORIG(self) :
+    ## def interp_coef_2d_field_from_corner_points_CORNERS_ONLY(self) :
         
-        f01, f10, np01 = project_new_point_and_calc_distance_factors(self.partner_grids[0].v,
-                                                                     self.master_grid.v,
-                                                                     self.partner_grids[1].v)
+    ##     f01, f10, np01 = project_new_point_and_calc_distance_factors(self.partner_grids[0].v,
+    ##                                                                  self.master_grid.v,
+    ##                                                                  self.partner_grids[1].v)
         
-        f32, f23, np32 = project_new_point_and_calc_distance_factors(self.partner_grids[3].v,
-                                                                     self.master_grid.v,
-                                                                     self.partner_grids[2].v)
+    ##     f32, f23, np32 = project_new_point_and_calc_distance_factors(self.partner_grids[3].v,
+    ##                                                                  self.master_grid.v,
+    ##                                                                  self.partner_grids[2].v)
 
-        fm01, fm32 = distance_factors(np01, self.master_grid.v, np32)
+    ##     fm01, fm32 = distance_factors(np01, self.master_grid.v, np32)
 
-        #print 'f01 = ', f01, '   f10 =', f10, '   NP01 =', np01
-        #print 'f32 = ', f32, '   f23 =', f23, '   NP32 =', np32
-        #print 'fm01 = ', fm01, '   fm32 = ', fm32
+    ##     #print 'f01 = ', f01, '   f10 =', f10, '   NP01 =', np01
+    ##     #print 'f32 = ', f32, '   f23 =', f23, '   NP32 =', np32
+    ##     #print 'fm01 = ', fm01, '   fm32 = ', fm32
     
-        f31, f13, np31 = project_new_point_and_calc_distance_factors(self.partner_grids[3].v,
-                                                                     self.master_grid.v,
-                                                                     self.partner_grids[1].v)
+    ##     f31, f13, np31 = project_new_point_and_calc_distance_factors(self.partner_grids[3].v,
+    ##                                                                  self.master_grid.v,
+    ##                                                                  self.partner_grids[1].v)
         
-        f02, f20, np02 = project_new_point_and_calc_distance_factors(self.partner_grids[0].v,
-                                                                     self.master_grid.v,
-                                                                     self.partner_grids[2].v)
+    ##     f02, f20, np02 = project_new_point_and_calc_distance_factors(self.partner_grids[0].v,
+    ##                                                                  self.master_grid.v,
+    ##                                                                  self.partner_grids[2].v)
 
-        fm31, fm02 = distance_factors(np31, self.master_grid.v, np02)
+    ##     fm31, fm02 = distance_factors(np31, self.master_grid.v, np02)
 
-        #print 'f31 = ', f31, '   f13 =', f13, '   NP31 =', np31
-        #print 'f02 = ', f02, '   f20 =', f20, '   NP02 =', np02
-        #print 'fm02 = ', fm02, '   fm31 = ', fm31
+    ##     #print 'f31 = ', f31, '   f13 =', f13, '   NP31 =', np31
+    ##     #print 'f02 = ', f02, '   f20 =', f20, '   NP02 =', np02
+    ##     #print 'fm02 = ', fm02, '   fm31 = ', fm31
 
 
-        self.partner_factors[self.partner_grids[0]] = ( fm01 * f01 + fm02 * f02 ) / 2.0
-        self.partner_factors[self.partner_grids[1]] = ( fm01 * f10 + fm31 * f13 ) / 2.0
-        self.partner_factors[self.partner_grids[2]] = ( fm32 * f23 + fm02 * f20 ) / 2.0
-        self.partner_factors[self.partner_grids[3]] = ( fm32 * f32 + fm31 * f31 ) / 2.0
+    ##     self.partner_factors[self.partner_grids[0]] = ( fm01 * f01 + fm02 * f02 ) / 2.0
+    ##     self.partner_factors[self.partner_grids[1]] = ( fm01 * f10 + fm31 * f13 ) / 2.0
+    ##     self.partner_factors[self.partner_grids[2]] = ( fm32 * f23 + fm02 * f20 ) / 2.0
+    ##     self.partner_factors[self.partner_grids[3]] = ( fm32 * f32 + fm31 * f31 ) / 2.0
 
-    pass
+    ## pass
 
     #----------------------------------------------------------------------------------------------------
     # TRY INCLUDING THE MIDSIDE NODES
     def interp_coef_2d_field_from_corner_points(self) :
         mef = np.zeros(8)
+        mefc = np.zeros(8)
         
         f01, f10, np01 = project_new_point_and_calc_distance_factors(self.partner_grids[0].v,
                                                                      self.master_grid.v,
@@ -1401,10 +1402,10 @@ class grid_mesh_association(object) :
         fm01, fm32 = distance_factors(np01, self.master_grid.v, np32)
 
 
-        mef[0] += ( fm01 * f01 )
-        mef[1] += ( fm01 * f10 )
-        mef[2] += ( fm32 * f23 )
-        mef[3] += ( fm32 * f32 )
+        mef[0] += ( fm01 * f01 ) ; mefc[0] += 1.0
+        mef[1] += ( fm01 * f10 ) ; mefc[1] += 1.0
+        mef[2] += ( fm32 * f23 ) ; mefc[2] += 1.0
+        mef[3] += ( fm32 * f32 ) ; mefc[3] += 1.0
         
         #print 'f01 = ', f01, '   f10 =', f10, '   NP01 =', np01
         #print 'f32 = ', f32, '   f23 =', f23, '   NP32 =', np32
@@ -1424,10 +1425,10 @@ class grid_mesh_association(object) :
         fm31, fm02 = distance_factors(np31, self.master_grid.v, np02)
 
 
-        mef[0] += ( fm02 * f02 )
-        mef[1] += ( fm31 * f13 )
-        mef[2] += ( fm02 * f20 )
-        mef[3] += ( fm31 * f31 )
+        mef[0] += ( fm02 * f02 ) ; mefc[0] += 1.0
+        mef[1] += ( fm31 * f13 ) ; mefc[1] += 1.0
+        mef[2] += ( fm02 * f20 ) ; mefc[2] += 1.0
+        mef[3] += ( fm31 * f31 ) ; mefc[3] += 1.0
         
         #print 'f31 = ', f31, '   f13 =', f13, '   NP31 =', np31
         #print 'f02 = ', f02, '   f20 =', f20, '   NP02 =', np02
@@ -1436,47 +1437,61 @@ class grid_mesh_association(object) :
 
         if( f01 <= f10 )  : # PROJECTED EDGE POINT IS BETWEEN X0 AND X4 (MID SIDE NODE: X0->X4->X1 )
             f04, f40 = distance_factors(self.partner_grids[0].v, np01, self.partner_grids[4].v)
-            mef[0] += ( fm01 * f04 )
-            mef[4] += ( fm01 * f40 )
+            mef[0] += ( fm01 * f04 ) ; mefc[0] += 1.0
+            mef[4] += ( fm01 * f40 ) ; mefc[4] += 1.0
         else :
             f14, f41 = distance_factors(self.partner_grids[1].v, np01, self.partner_grids[4].v)
-            mef[1] += ( fm01 * f14 )
-            mef[4] += ( fm01 * f41 )
+            mef[1] += ( fm01 * f14 ) ; mefc[1] += 1.0
+            mef[4] += ( fm01 * f41 ) ; mefc[4] += 1.0
         pass
 
+        #mef[4] = (mef[0] + mef[1] ) / 2.0 
 
         if( f02 <= f20 )  : # PROJECTED EDGE POINT IS BETWEEN X0 AND X5 (MID SIDE NODE: X0->X5->X2 )
             f05, f50 = distance_factors(self.partner_grids[0].v, np02, self.partner_grids[5].v)
-            mef[0] += ( fm02 * f05 )
-            mef[5] += ( fm02 * f50 )
+            mef[0] += ( fm02 * f05 ) ; mefc[0] += 1.0
+            mef[5] += ( fm02 * f50 ) ; mefc[5] += 1.0
         else :
             f25, f52 = distance_factors(self.partner_grids[2].v, np02, self.partner_grids[5].v)
-            mef[2] += ( fm02 * f25 )
-            mef[5] += ( fm02 * f52 )
+            mef[2] += ( fm02 * f25 ) ; mefc[2] += 1.0
+            mef[5] += ( fm02 * f52 ) ; mefc[5] += 1.0
         pass
+
+        #mef[5] = (mef[0] + mef[2] ) / 2.0 
 
 
 
         if( f32 <= f23 )  : # PROJECTED EDGE POINT IS BETWEEN X3 AND X6 (MID SIDE NODE: X3->X6->X2 )
             f36, f63 = distance_factors(self.partner_grids[3].v, np32, self.partner_grids[6].v)
-            mef[3] += ( fm32 * f36 )
-            mef[6] += ( fm32 * f63 )
+            mef[3] += ( fm32 * f36 ) ; mefc[3] += 1.0
+            mef[6] += ( fm32 * f63 ) ; mefc[6] += 1.0
         else :
             f26, f62 = distance_factors(self.partner_grids[2].v, np32, self.partner_grids[6].v)
-            mef[2] += ( fm32 * f26 )
-            mef[6] += ( fm32 * f62 )
+            mef[2] += ( fm32 * f26 ) ; mefc[2] += 1.0
+            mef[6] += ( fm32 * f62 ) ; mefc[6] += 1.0
         pass
+
+        #mef[6] = (mef[3] + mef[2] ) / 2.0 
 
 
         if( f31 <= f13 )  : # PROJECTED EDGE POINT IS BETWEEN X3 AND X7 (MID SIDE NODE: X3->X7->X1 )
             f37, f73 = distance_factors(self.partner_grids[3].v, np31, self.partner_grids[7].v)
-            mef[3] += ( fm31 * f37 )
-            mef[7] += ( fm31 * f73 )
+            mef[3] += ( fm31 * f37 ) ; mefc[3] += 1.0
+            mef[7] += ( fm31 * f73 ) ; mefc[7] += 1.0
         else :
             f17, f71 = distance_factors(self.partner_grids[1].v, np31, self.partner_grids[7].v)
-            mef[1] += ( fm31 * f17 )
-            mef[7] += ( fm31 * f71 )
+            mef[1] += ( fm31 * f17 ) ; mefc[1] += 1.0
+            mef[7] += ( fm31 * f71 ) ; mefc[7] += 1.0
         pass
+
+        #mef[7] = (mef[3] + mef[1] ) / 2.0 
+
+
+        # AVERAGE
+        for i in range(8) :
+            mef[i] = mef[i] / mefc[i]
+        pass
+
 
             
         # NORMAL ALL THE FACTORS
@@ -2127,11 +2142,11 @@ class join(object) :
             working_slave_gl = copy.copy(self.slave.face_gl)
             # REMOVE ELEMENT_MID_EDGE SLAVE NODES - USE ONLY CORNER NODES ON THE FACE
             #  SO WE CAN GET WRITE WEIGHTED EQUATIONS IN BOTH PARAMETRIC DIRECTIONS
-            working_slave_gl = self.slave.block.mesh.get_grid_list_from_tags(GTAGS.ELEMENT_CORNER,
+            working_slave_corner_gl = self.slave.block.mesh.get_grid_list_from_tags(GTAGS.ELEMENT_CORNER,
                                                                              working_slave_gl)
 
             print 'CORNER SLAVE GRIDS...'
-            for si, sg in enumerate(working_slave_gl) :
+            for si, sg in enumerate(working_slave_corner_gl) :
                 print si, sg
             pass
 
@@ -2256,20 +2271,29 @@ class join(object) :
                 working_slave_gl.sort(key=lambda g : np.linalg.norm(g.v - mg.v))
                 pg = working_slave_gl[0] # THIS IS THE NEAREST SLAVE GRID
 
-                #mg.partner_grids.append(pg)
-                gmass.add_partner(pg)
+
                 vv = pg.v - mg.v
                 dv = np.linalg.norm(vv)
 
                 print 'FOUND CLOSE SLAVE GRID :', pg
+                print 'DV = ', dv
 
 
                 # WE ARE SITTING ON A POINT - WE HAVE AN 1 TO 1 RELATIONSHIP
                 if( dv < constants.TOL ) :
+                    gmass.add_partner(pg)
                     print 'NEARLY IDENTTICAL SLAVE POINT - GOING TO MAP 1 TO 1  dv = ', dv
                     continue
                 pass
 
+                # THE NEAREST POINT WAS A ELEMENT_MID_EDGE POINT AND WAS NOT COINCIDENT WIITH THE PARENT POINT
+                # WE NEED TO FIND THE NEAREST CORNER POINT...
+                if( pg.tags & GTAGS.ELEMENT_MID_EDGE ) :
+                    working_slave_corner_gl.sort(key=lambda g : np.linalg.norm(g.v - mg.v))
+                    pg = working_slave_corner_gl[0] # THIS IS THE NEAREST CORNER SLAVE GRID
+                pass
+                    
+                gmass.add_partner(pg)
 
                 pg_uvw =  np.zeros( (8, 3), dtype=np.int32 )
                 pg_uvw[0] = [ pg.uvw[DIR.U], pg.uvw[DIR.V], pg.uvw[DIR.W] ]
@@ -2285,7 +2309,7 @@ class join(object) :
                     uvw = [None, None, None]
                     uvw[dd] = pg_uvw[0][dd]
                     line_o_grids = self.slave.block.mesh.get_grid_list_from_indices(
-                        uvw[DIR.U], uvw[DIR.V], uvw[DIR.W], working_slave_gl)
+                        uvw[DIR.U], uvw[DIR.V], uvw[DIR.W], working_slave_corner_gl)
 
                     if( pg in line_o_grids ) :
                         line_o_grids.remove(pg)

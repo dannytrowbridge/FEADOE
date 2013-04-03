@@ -808,6 +808,19 @@ class block(object) :
             pass
         pass
 
+
+        ## # DT test
+        ## self.ne[0] = 4
+        ## self.ne[1] = 4
+        ## self.ne[2] = 2
+
+        ## if( self.name == 'B' ) :
+        ##     self.ne[0] = 6
+        ##     self.ne[1] = 4
+        ##     self.ne[2] = 4
+        ## pass
+
+
         print 'NE = \n', self.ne 
         print 'NOM_EL_SIZE = \n', self.nom_el_size 
 
