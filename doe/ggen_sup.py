@@ -815,9 +815,9 @@ class block(object) :
         ## self.ne[2] = 2
 
         ## if( self.name == 'B' ) :
-        ##     self.ne[0] = 6
-        ##     self.ne[1] = 4
-        ##     self.ne[2] = 4
+        ##     self.ne[0] = 3
+        ##     self.ne[1] = 2
+        ##     self.ne[2] = 3
         ## pass
 
 
