@@ -76,17 +76,18 @@ block_tags = [
 BTAGS = namedtuple('BTAGS',
                    block_tags, verbose = False)._make( int(2**i) for i in range(len(block_tags)) )
 
+# THE FIRST SIX TERMS OF grid_tags AND face_tags ARE THE SAME FOR CONVIENCE
 
 grid_tags = [
+    'MIN_W',
+    'MAX_W',
+    'MIN_V',
+    'MAX_U',
+    'MAX_V',
+    'MIN_U',
     'CENTER_U',
     'CENTER_V',
     'CENTER_W',
-    'MIN_U',
-    'MAX_U',
-    'MIN_V',
-    'MAX_V',
-    'MIN_W',
-    'MAX_W',
     'ANCILLARY',
     'PENDING_DELETE',
     'ELEMENT_MID_SIDE',
