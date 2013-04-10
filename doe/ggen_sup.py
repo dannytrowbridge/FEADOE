@@ -94,6 +94,7 @@ class point(object) :
     #----------------------------------------------------------------------------------------------------
 
     def __init__ (self, x = 0.0, y = 0.0, z = 0.0, pp = {}) :
+        self.tags = 0
         self.v = np.array([x, y, z])
         self.params = OrderedDict(point.standard_params)
         #self.params = OrderedDict(self.__class__.standard_params)
@@ -144,6 +145,69 @@ class point(object) :
         return(rc)
     pass
 
+    #----------------------------------------------------------------------------------------------------
+
+    def calc_avg_parameter_data_from_point_list(self, gl) :
+        #print '>>> TOP >>> ', here(), '  NAME = ',self.name
+        
+        #super(grid, self).__init__(0.0, 0.0, 0.0)
+        self.__init__(0.0, 0.0, 0.0)
+
+        ng = len(gl)
+        if( ng == 0 ) : return
+
+        
+        #print 'POINT:', self
+
+        #print 'GL = ', gl
+        # AVERAGE X, Y, Z
+        for g in gl :
+            #print 'TYPE self = ', type(self), '   TYPE g =', type(g)
+            for dd in range(len(self.v)) :
+                self.v[dd] += g.v[dd]
+            pass
+        pass
+        for dd in range(len(self.v)) :
+             self.v[dd] /= float(ng) 
+        pass
+
+        # AVERAGE ANCILLARY DATA - IF POSSIBLE
+        pd = {}
+
+        # SUM
+        for g in gl :
+            #print 'LOOKING AT GRID PARAMS FOR GRID;', g
+            for k, v in g.params.items() :
+                #print '  LOOKING AT PARAM :', k
+                if( k not in pd ) :
+                    pd[k] = [v, 1]  # [ sum, count ] pairs
+                    #print 'FIRST TIME FOR PARAM  VAL=', v
+                else :
+                    if( not isinstance(v, str) ) : # CAN'T SUM STRING PARAMS
+                        pd[k][0] += v
+                        pd[k][1] += 1
+                        #print pd[k][1], ' TIME FOR PARAM  VAL=', v, '   RUNNING TOT = ', pd[k][0] 
+                    pass
+                pass
+            pass
+        pass
+
+        # NOW AVERAGE
+        for k, v  in pd.items() :
+            if( not isinstance(v[0], str) ) :
+                self.set_param(k, v[0] / float(v[1]))
+            else :
+               self.set_param(k, v[0])
+            pass
+            #print 'PARAM ', k, '  AVG VAL = ', self.get_param(k, -1.0)
+        pass
+
+    pass
+        
+
+
+    #----------------------------------------------------------------------------------------------------
+
 pass
 
 
@@ -154,8 +218,9 @@ pass
 ## | | / / __/ ___/_  __/ __ \/ _ \
 ## | |/ / _// /__  / / / /_/ / , _/
 ## |___/___/\___/ /_/  \____/_/|_|
-# ALSO USED AS AN EDGE OF A FACE
-
+#
+# ALSO USED AS AN EDGE OF A FACE  <-= NOTE
+#
 class vector(object) :
 
 #class Zheese():
@@ -166,7 +231,8 @@ class vector(object) :
         
 #    def __init__ (self, x1, y1, z1, x2, y2, z2) :
     def __init__ (self, p1, p2 = None, parent = None) :
-
+        self.tags = 0
+        
         # ONLY ONE POINT SPECIFIED THEN ASSUME THIS IS A LOCATION VECTOR
         #                    - START POINT ASSUMED TO BE ORIGIN
         if( p2 is None ) : 
@@ -232,7 +298,7 @@ class vector(object) :
 
 
     #----------------------------------------------------------------------------------------------------
-
+    # FLIP IN PLACE
     def flip(self) :
         # SWAP START AND END POINTS
         self.sp, self.ep = self.ep, self.sp
@@ -240,7 +306,7 @@ class vector(object) :
     pass
     
     #----------------------------------------------------------------------------------------------------
-
+    # FLIP A COPY
     def vector_from_flip(self) :
         v = vector(self.sp, self.ep, self.parent)
         v.flip()
@@ -395,18 +461,44 @@ class face(object) :
 
     #----------------------------------------------------------------------------------------------------
 
-    def __init__ (self, name, *el) :
+    def __init__ (self, name) :
         self.tags = 0
         self.name = name
         self.edges = []
-        print "nedges passed = ", len(el) 
+        #print "nedges passed = ", len(el) 
+    pass
+
+    #----------------------------------------------------------------------------------------------------
+
+    def define_face_from_edge_list(self, *el) :
         for i, edg in enumerate(el) :
-            print 'ADDING FACE EDGE # ', i
-            self.edges.append(copy.deepcopy(edg)) # NOT SURE THIS IS SMART
+            #print 'ADDING FACE EDGE # ', i
+            self.edges.append(copy.deepcopy(edg)) 
         pass
         for e in self.edges :
             e.parent = self
         pass
+    pass
+
+    #----------------------------------------------------------------------------------------------------
+    # NORMALS POINT IN
+    def define_face_from_points(self, p1, p2, p3, p4) :
+        self.edges = []
+        self.edges.append( vector(p1, p2, self) )
+        self.edges.append( vector(p2, p3, self) )
+        self.edges.append( vector(p3, p4, self) )
+        self.edges.append( vector(p4, p1, self) )
+    pass
+
+    #----------------------------------------------------------------------------------------------------
+
+    def get_face_corner_points(self) :
+        cps = []
+        cps.append(self.edges[0].sp)
+        cps.append(self.edges[1].sp)
+        cps.append(self.edges[2].sp)
+        cps.append(self.edges[3].sp)
+        return(cps)
     pass
 
     #----------------------------------------------------------------------------------------------------
@@ -421,7 +513,7 @@ class face(object) :
         s = 'FACE:  ' + self.name + '  EDGES...\n'
         #print 'NUMBER OF EDGES =', len(self.edges)
         for i, e in enumerate(self.edges) :
-            s += '>>> ' + str(i) + ') ' + str(e) + ' <<<\n'
+            s += '>>> ' + str(i) + ') ' + str(e) + ' <<< ps=' + str(e.sp.get_param('PRES', 0.0)) + ' pe=' + str(e.ep.get_param('PRES', 0.0)) + ' \n'
         pass
         return(s)
     pass
@@ -467,9 +559,10 @@ pass
 
 class block(object) :
 
+
+
     #----------------------------------------------------------------------------------------------------
 
-    ## def __init__ (self, name, model, *fl) :
     def __init__ (self, name, model) :
         self.tags = 0
         self.defined_by_tag = -1
@@ -479,17 +572,11 @@ class block(object) :
         self.mesh = None
         #self.mesh.block = None # BACK POINTER FROM THE MESH TO THIS BLOCK
         self.model = model
-        self.faces = []
+        self.faces = {} # FACES DICT
+        #self.faces = OrderedDict()
         self.pl = {} # POINT DICT
         self.el = {} # EDGE DICT
         
-        ##for i, fac in enumerate(fl) :
-        ##    self.faces.append(copy.deepcopy(fac)) # NOT SURE THIS IS SMART
-        ##pass    
-        ### TBD - IF WE PASS IN FACES WE NEED TO STORE THE CORRESPONDING
-        ###    POINTS AND EDGES - IF WE PASSED IN ALL 6 FACES
-        #self.defined_by_tag = BTAGS.DEFINED 
-
         self.min_ne = 2 # min number of elements in any direction
         self.avg_dv = [ np.zeros(3) ] * 3
         self.coords = [ np.zeros(3) ] * 3
@@ -511,6 +598,7 @@ class block(object) :
         del self.faces
         del self.mesh
         del self.pl
+        del self.el
     pass
 
     #----------------------------------------------------------------------------------------------------
@@ -518,7 +606,7 @@ class block(object) :
     def __repr__(self) :
         s = 'BLOCK:  FACES...\n'
         print 'NUMBER OF FACES =', len(self.faces)
-        for i, f in enumerate(self.faces) :
+        for i, f in enumerate(self.faces.values()) :
             s += '>>> ' + str(i) + ') ' + str(f.name) + ' <<<\n'
         pass
         
@@ -549,9 +637,86 @@ class block(object) :
     
     #----------------------------------------------------------------------------------------------------
 
-    def explode_block_from_middle_surface(self) :
-        if( len(self.faces) != 1 ) : return
-        f = self.faces[0]
+    # FROM CALCULIX MANUAL...
+    #  face 1: 1-2-3-4 -> FTAGS.MIN_W - 1
+    #  face 2: 5-8-7-6 -> FTAGS.MAX_W - 2
+    #  face 3: 1-5-6-2 -> FTAGS.MIN_V - 4
+    #  face 4: 2-6-7-3 -> FTAGS.MAX_U - 8
+    #  face 5: 3-7-8-4 -> FTAGS.MAX_V - 16
+    #  face 6: 4-8-5-1 -> FTAGS.MIN_U - 32
+    #
+    # FACE NORMALS POINT IN
+    #
+##                            
+##                            W
+##                          |                   .-' V
+##      -1,1,1              |                .-'
+##               .:.........|..............-'1,1,1
+##             .' |         |           .'
+## -1,-1,1   .:....................._.-' |
+##           |    |         |     .-| 1,-1,1
+##           |    |         |  .-'  |    |
+##           |    |         .-:.....|.......................U
+##           |    |      0,0,0      |    |
+##           |    |                 |    |
+##           |    |-1,1,-1          |    |
+##           |   .'.................|....'   1, 1, -1
+##           |  /                   | .'
+##           `.:....................|'
+##
+##        -1,-1,-1                 1,-1,-1
+##                                                   
+##                8        +W               7    
+##               .:........................  
+##             .' |      F2             .'
+##         5 .:....................._.-' |
+##           |    |                 |6   |
+##   -U      |    |      F5(back)   |    |      +U
+##           |    |                 |    |                   
+##           | F6 |    F3(front)    | F4 |
+##           |    |                 |    |
+##           |    |4                |    |
+##           |   .'.................|....' 3
+##           |  /        F1         | .'
+##           `.:....................|'
+##           1                      2
+##                     -W                            
+
+    #----------------------------------------------------------------------------------------------------
+    # General block definiton
+    #    - Must use faces (not points) so we can change pressures independently on each face  
+
+    def define_block_from_faces(self, f1, f2, f3, f4, f5, f6) :
+        self.faces.clear()
+        
+        # WE NEED TO STORE THE CORRESPONDING POINTS AND EDGES SO DO A DEEP COPY
+        self.faces[FTAGS.MIN_W] = copy.deepcopy(f1)
+        self.faces[FTAGS.MAX_W] = copy.deepcopy(f2)
+        self.faces[FTAGS.MIN_V] = copy.deepcopy(f3)
+        self.faces[FTAGS.MAX_U] = copy.deepcopy(f4)
+        self.faces[FTAGS.MAX_V] = copy.deepcopy(f5)
+        self.faces[FTAGS.MIN_U] = copy.deepcopy(f6)
+
+        self.defined_by_tag = BTAGS.DEFINED
+        self.add_points_and_edges_from_faces()
+
+    pass
+
+    #----------------------------------------------------------------------------------------------------
+    # RIGHT HAND RULE IN POINT LISTING
+    def define_block_from_mid_plane_points(self, p1, p2, p3, p4) :
+        self.faces.clear()       
+        ff = face(self.name + '_MIDSURF')
+        ff.define_face_from_points(p1, p2, p3, p4)
+        ff.tags |= FTAGS.MID_W
+        self.explode_block_from_middle_surface(ff)
+    pass
+
+    #----------------------------------------------------------------------------------------------------
+
+    def explode_block_from_middle_surface(self, f) :
+        #if( len(self.faces) != 1 ) : return
+        #f = self.faces[0]
         #self.pl = {}
         #self.el = {} # THIS IS THE EDGE LIST IN THE BLOCK CLASS
         self.defined_by_tag = BTAGS.EXPLODED 
@@ -617,7 +782,7 @@ class block(object) :
             
         pass
 
-        self.add_edges_from_points()
+        self.add_edges_and_faces_from_points()
 
         #print '_'*80 + '\n'
         self.print_points()
@@ -628,27 +793,74 @@ class block(object) :
     pass
 
     #----------------------------------------------------------------------------------------------------
-    # RIGHT HAND RULE IN POINT LISTING
-    def define_block_from_mid_plane_points(self, p1, p2, p3, p4) :
-
+    # THIS IS ONLY CALLED FOR FACE DEFINED BLOCKS
+    # IN THE GENERAL CASE WE CAN HAVE MORE THAN ONE POINT AT A CORNER
+    #  THIS IS SO WE CAN DE DEFINE NEIGHBORING FACES WITH DIFFERENT POINTS WITH DIFFERENT PRESSURES, ETC.
+    # WE MUST ASSUME THAT THE EDGES AND THE POINTS DEFINED BY THE FACES ARE COINCIDENT OTHERWISE
+    #  WE CAN'T MESH THE BLOCK
+    def add_points_and_edges_from_faces(self) :
         
-        del self.faces[0:len(self.faces)]        
-        edges = []
-        edges.append( vector(p1, p2, self) )
-        edges.append( vector(p2, p3, self) )
-        edges.append( vector(p3, p4, self) )
-        edges.append( vector(p4, p1, self) )
-        ff = face(self.name + '_MIDSURF', *edges)
-        self.faces.append(ff)
-        self.explode_block_from_middle_surface()
+        p = 1
+        n = -1
+
+        # FACE NORMALS POINT IN
+        
+        f = self.faces[FTAGS.MIN_W]
+
+        # nnn is defined by
+        #  FACE F1, F3, F6
+        
+        
+        self.pl[n, n, n] = copy.deepcopy(f.edges[0].sp)
+        self.pl[p, n, n] = copy.deepcopy(f.edges[0].ep)
+        self.pl[p, p, n] = copy.deepcopy(f.edges[2].sp)
+        self.pl[n, p, n] = copy.deepcopy(f.edges[2].ep)
+        
+        self.el[n, n, n, p, n, n] = copy.deepcopy(f.edges[0])
+        self.el[p, n, n, p, p, n] = copy.deepcopy(f.edges[1])
+        self.el[n, p, n, p, p, n] = copy.deepcopy(f.edges[2].vector_from_flip())
+        self.el[n, n, n, n, p, n] = copy.deepcopy(f.edges[3].vector_from_flip())
+
+
+        f = self.faces[FTAGS.MAX_W]
+        self.pl[n, n, p] = copy.deepcopy(f.edges[0].sp)
+        self.pl[n, p, p] = copy.deepcopy(f.edges[0].ep)
+        self.pl[p, p, p] = copy.deepcopy(f.edges[2].sp)
+        self.pl[p, n, p] = copy.deepcopy(f.edges[2].ep)
+
+        self.el[n, n, p, n, p, p] = copy.deepcopy(f.edges[0])
+        self.el[n, p, p, p, p, p] = copy.deepcopy(f.edges[1])
+        self.el[p, n, p, p, p, p] = copy.deepcopy(f.edges[2].vector_from_flip())
+        self.el[n, n, p, p, n, p] = copy.deepcopy(f.edges[3].vector_from_flip())
+
+
+        f = self.faces[FTAGS.MIN_V]
+        self.el[n, n, n, n, n, p] = copy.deepcopy(f.edges[0])
+        self.el[p, n, n, p, n, p] = copy.deepcopy(f.edges[2].vector_from_flip())
+        
+        f = self.faces[FTAGS.MAX_V]
+        self.el[p, p, n, p, p, p] = copy.deepcopy(f.edges[0])
+        self.el[n, p, n, n, p, p] = copy.deepcopy(f.edges[2].vector_from_flip())
+
+
+        self.calc_geom_jar()
+        
+        pass
     pass
 
     #----------------------------------------------------------------------------------------------------
-
-    def add_edges_from_points(self) :
+    # THIS IS ONLY CALLED FOR EXLODED BLOCKS
+    def add_edges_and_faces_from_points(self) :
 
         p = 1
         n = -1
+
+        # NOTE:
+        # The edges stored in the block class "el" dictionary always point
+        # from the minimum parameter direction to the maximum parameter direction
+        #
+        # The edges stored in the face are stored so they are oriented so they form a loop
+        # that circumventes the perimeter of the face, eventually ending back to where it started.
         
         #self.avg_dv = [ np.zeros(3) ] * 3
         #self.coords = [ np.zeros(3) ] * 3
@@ -656,28 +868,28 @@ class block(object) :
         
         #print '\nAVG_DV[]=', self.avg_dv
        
-        c = 0
+        #c = 0
         # EDGES THAT GO FROM LOU TO HIU
         for si in [ (n, n, n), (n, p, n), (n, p, p), (n, n, p) ] :
-            c += 1
+            #c += 1
             # CHANGE ONE INDEX IN THE DIRECTION OF CONCERN TO GET END POINT INDEX
             lei = list(si) ; lei[DIR.U] = p ; ei = tuple(lei)
             edge_index = si + ei        
             self.el[edge_index] = vector(self.pl[si], self.pl[ei], self)
             #print 'DELU ', si, ' -=> ', ei, ' DV=', self.el[edge_index].dv   
-            self.avg_dv[DIR.U] = self.avg_dv[DIR.U] + self.el[edge_index].dv
+            #self.avg_dv[DIR.U] = self.avg_dv[DIR.U] + self.el[edge_index].dv
         pass
         #print DIR.U, 'DELU AVG = ',  self.avg_dv[DIR.U]   
-        self.avg_dv[DIR.U] = self.avg_dv[DIR.U] / float(c)
+        #self.avg_dv[DIR.U] = self.avg_dv[DIR.U] / float(c)
         #print DIR.U, 'DELU AVG = ',  self.avg_dv[DIR.U]   
 
         #print '\nAVG_DV[]=', self.avg_dv
         
-        c = 0
+        #c = 0
         #print 'PRE:', DIR.V, 'DELV AVG = ',  self.avg_dv[DIR.V]   
         # EDGES THAT GO FROM LOV TO HIV
         for si in [ (n, n, n), (p, n, n), (p, n, p), (n, n, p) ] :
-            c += 1
+            #c += 1
             # CHANGE ONE INDEX IN THE DIRECTION OF CONCERN TO GET END POINT INDEX
             lei = list(si) ; lei[DIR.V] = p ; ei = tuple(lei)
             edge_index = si + ei
@@ -686,29 +898,105 @@ class block(object) :
             self.el[edge_index] = vector(self.pl[si], self.pl[ei], self)
             #print 'BEFORE ADD =', self.avg_dv[DIR.V]
             #print 'DELV ', si, ' -=> ', ei, ' DV=', self.el[edge_index].dv   
-            self.avg_dv[DIR.V] = self.avg_dv[DIR.V] +self.el[edge_index].dv
+            #self.avg_dv[DIR.V] = self.avg_dv[DIR.V] +self.el[edge_index].dv
             #print 'AFTER ADD =', self.avg_dv[DIR.V]
         pass
         #print DIR.V, 'DELV AVG = ',  self.avg_dv[DIR.V]   
-        self.avg_dv[DIR.V] = self.avg_dv[DIR.V] / float(c)
+        #self.avg_dv[DIR.V] = self.avg_dv[DIR.V] / float(c)
         #print DIR.V, 'DELV AVG = ',  self.avg_dv[DIR.V]   
 
         #print '\nAVG_DV[]=', self.avg_dv
 
-        c = 0
+        #c = 0
         # EDGES THAT GO FROM LOW TO HIW
         for si in [ (n, n, n), (p, n, n), (p, p, n), (n, p, n) ] :
-            c += 1
+            #c += 1
             # CHANGE ONE INDEX IN THE DIRECTION OF CONCERN TO GET END POINT INDEX
             lei = list(si) ; lei[DIR.W] = p ; ei = tuple(lei)
             edge_index = si + ei        
             self.el[edge_index] = vector(self.pl[si], self.pl[ei], self)
             #print 'DELW ', si, ' -=> ', ei, ' DV=', self.el[edge_index].dv   
-            self.avg_dv[DIR.W] = self.avg_dv[DIR.W] + self.el[edge_index].dv
+            #self.avg_dv[DIR.W] = self.avg_dv[DIR.W] + self.el[edge_index].dv
         pass
         #print DIR.W, 'DELV AVG = ',  self.avg_dv[DIR.V]   
-        self.avg_dv[DIR.W] = self.avg_dv[DIR.W] / float(c)
+        #self.avg_dv[DIR.W] = self.avg_dv[DIR.W] / float(c)
         #print DIR.W, 'DELV AVG = ',  self.avg_dv[DIR.V]   
+
+        # NORMALS POINT IN
+        #  face 1: 1-2-3-4 -> FTAGS.MIN_W - 1
+        #  face 2: 5-8-7-6 -> FTAGS.MAX_W - 2
+        #  face 3: 1-5-6-2 -> FTAGS.MIN_V - 4
+        #  face 4: 2-6-7-3 -> FTAGS.MAX_U - 8
+        #  face 5: 3-7-8-4 -> FTAGS.MAX_V - 16
+        #  face 6: 4-8-5-1 -> FTAGS.MIN_U - 32
+        #
+        #pordertoindex = [ (n, n, n), (p, n, n), (p, p, n), (n, p, n), (n, n, p), (p, n, p), (p, p, p), (n, p, p) ]
+
+        # FACE 1 - MIN_W
+        edges = []
+        edges.append(self.el[n, n, n, p, n, n])
+        edges.append(self.el[p, n, n, p, p, n])
+        edges.append(self.el[n, p, n, p, p, n].vector_from_flip())
+        edges.append(self.el[n, n, n, n, p, n].vector_from_flip())
+        ff = face(self.name + '_MIN_W', *edges)
+        ff.tags |= FTAGS.MIN_W
+        self.faces[FTAGS.MIN_W] = ff
+
+        # FACE 2 - MAX_W
+        edges = []
+        edges.append(self.el[n, n, p, p, n, p])
+        edges.append(self.el[p, n, p, p, p, p])
+        edges.append(self.el[n, p, p, p, p, p].vector_from_flip())
+        edges.append(self.el[n, n, p, n, p, p].vector_from_flip())
+        ff = face(self.name + '_MAX_W', *edges)
+        ff.tags |= FTAGS.MAX_W
+        self.faces[FTAGS.MAX_W] = ff
+        
+        # FACE 3 - MIN_V
+        edges = []
+        edges.append(self.el[n, n, n, p, n, n])
+        edges.append(self.el[p, n, n, p, n, p])
+        edges.append(self.el[n, n, p, p, n, p].vector_from_flip())
+        edges.append(self.el[n, n, n, n, n, p].vector_from_flip())
+        ff = face(self.name + '_MIN_V', *edges)
+        ff.tags |= FTAGS.MIN_V
+        self.faces[FTAGS.MIN_V] = ff
+
+        # FACE 4 - MAX_U
+        edges = []
+        edges.append(self.el[p, n, n, p, p, n])
+        edges.append(self.el[p, p, n, p, p, p])
+        edges.append(self.el[p, n, p, p, p, p].vector_from_flip())
+        edges.append(self.el[p, n, n, p, n, p].vector_from_flip())
+        ff = face(self.name + '_MAX_U', *edges)
+        ff.tags |= FTAGS.MAX_U
+        self.faces[FTAGS.MAX_U] = ff
+
+        # FACE 5 - MAX_V
+        edges = []
+        edges.append(self.el[n, p, n, p, p, n])
+        edges.append(self.el[p, p, n, p, p, p])
+        edges.append(self.el[n, p, p, p, p, p].vector_from_flip())
+        edges.append(self.el[n, p, n, n, p, p].vector_from_flip())
+        ff = face(self.name + '_MAX_V', *edges)
+        ff.tags |= FTAGS.MAX_V
+        self.faces[FTAGS.MAX_V] = ff
+
+        # FACE 6 - MIN_U
+        edges = []
+        edges.append(self.el[n, n, n, n, p, n])
+        edges.append(self.el[n, p, n, n, p, p])
+        edges.append(self.el[n, n, p, n, p, p].vector_from_flip())
+        edges.append(self.el[n, n, n, n, n, p].vector_from_flip())
+        ff = face(self.name + '_MIN_U', *edges)
+        ff.tags |= FTAGS.MIN_U
+        self.faces[FTAGS.MIN_U] = ff
+
+
+        ## print 'FACES FROM EXPLOSION...'
+        ## for f in self.faces.values() :
+        ##     print f
+        ## pass
 
         #print self.el
 
@@ -720,6 +1008,162 @@ class block(object) :
         
         # self.approx_middle = self.pl[n, n, n].v + half_dv
         #self.approx_middle = np.zeros(3)
+        ## self.edge_sizes = [ constants.BIG_REAL, 0.0, -1.0 * constants.BIG_REAL ]  # MIN, AVG, MAX
+        ## for kk, ev in self.el.items() :
+        ##     self.edge_sizes[constants.MIN] = min(self.edge_sizes[constants.MIN], ev.len)
+        ##     self.edge_sizes[constants.AVG] = self.edge_sizes[constants.AVG] + ev.len
+        ##     self.edge_sizes[constants.MAX] = max(self.edge_sizes[constants.MAX], ev.len)
+        ## pass
+        ## self.edge_sizes[constants.AVG] = self.edge_sizes[constants.AVG] / float(len(self.el))
+
+        ## #print 'MIN EDGE = ', self.edge_sizes[constants.MIN] 
+        ## #print 'AVG EDGE = ', self.edge_sizes[constants.AVG] 
+        ## #print 'MAX EDGE = ', self.edge_sizes[constants.MAX] 
+
+        ## for kk, pv in self.pl.items() :
+        ##     self.approx_middle =  self.approx_middle + pv.v
+        ## pass
+        ## self.approx_middle =  self.approx_middle / len(self.pl)
+        ## #print 'APPROX MIDDLE = ', self.approx_middle
+
+        ## # CALCULATE AN ORTHOGONAL BLOCK COODINATE SYSTEM
+        ## self.coords[DIR.U] = self.avg_dv[DIR.U]
+        ## self.coords[DIR.W] = np.cross( self.coords[DIR.U], self.avg_dv[DIR.V] )
+        ## self.coords[DIR.V] = np.cross( self.coords[DIR.W], self.coords[DIR.U] )
+
+        ## # NORMALIZE
+        ## for r in range(3) :
+        ##     self.coords[r] = self.coords[r] / np.linalg.norm(self.coords[r])
+        ## pass
+
+        
+        self.calc_geom_jar()
+        
+    pass
+
+    #----------------------------------------------------------------------------------------------------
+    # BLOCK GEOMETRY JACOBIAN ASPECT RATIO (JAR)
+    def calc_geom_jar(self) :
+        p = 1
+        n = -1
+
+
+        ## 'BLOCK EDGE KEYS...'
+        ## for k, v in self.el.items() :
+        ##     print k
+        ## pass
+
+
+
+
+        # AVG ALL THE FACE VALUES TO GET NEW BLOCK.EDGE AND BLOCK.POINT VALUES
+        # P1 - start/end pairs OF FACE EDGES
+        til = [ [ 1, (n,n,n), [ [ FTAGS.MIN_U, [ 3, 2 ] ],
+                                [ FTAGS.MIN_V, [ 0, 3 ] ],
+                                [ FTAGS.MIN_W, [ 0, 3 ] ],
+                                ] ],
+                [ 2, (p,n,n), [ [ FTAGS.MAX_U, [ 0, 3 ] ],
+                                [ FTAGS.MIN_V, [ 3, 2 ] ],
+                                [ FTAGS.MIN_W, [ 1, 0 ] ],
+                                ] ],
+                [ 3, (p,p,n), [ [ FTAGS.MAX_U, [ 3, 2 ] ],
+                                [ FTAGS.MAX_V, [ 0, 3 ] ],
+                                [ FTAGS.MIN_W, [ 2, 1 ] ],
+                                ] ],
+                [ 4, (n,p,n), [ [ FTAGS.MIN_U, [ 0, 3 ] ],
+                                [ FTAGS.MAX_V, [ 3, 2 ] ],
+                                [ FTAGS.MIN_W, [ 3, 2 ] ],
+                                ] ],
+                [ 5, (n,n,p), [ [ FTAGS.MIN_U, [ 2, 1 ] ],
+                                [ FTAGS.MIN_V, [ 1, 0 ] ],
+                                [ FTAGS.MAX_W, [ 0, 3 ] ],
+                                ] ],
+                [ 6, (p,n,p), [ [ FTAGS.MAX_U, [ 1, 0 ] ],
+                                [ FTAGS.MIN_V, [ 2, 1 ] ],
+                                [ FTAGS.MAX_W, [ 3, 2 ] ],
+                                ] ],
+                [ 7, (p,p,p), [ [ FTAGS.MAX_U, [ 2, 1 ] ],
+                                [ FTAGS.MAX_V, [ 1, 0 ] ],
+                                [ FTAGS.MAX_W, [ 2, 1 ] ],
+                                ] ],
+                [ 8, (n,p,p), [ [ FTAGS.MIN_U, [ 1, 0 ] ],
+                                [ FTAGS.MAX_V, [ 2, 1 ] ],
+                                [ FTAGS.MAX_W, [ 1, 0 ] ],
+                                ] ]
+                ]
+
+        kl = self.el.keys()
+        tp = point()
+        pl = []
+
+        for pn, pi, fiv in til :
+            print 'pn=', pn
+            print 'pi=', pi
+            print 'fiv=', fiv
+            tp.__init__()
+            del pl[:]
+            for ft, il in fiv:
+                pl.append(self.faces[ft].edges[il[0]].sp)
+                pl.append(self.faces[ft].edges[il[1]].ep)
+                print 'FACE TAG =', ft,
+                print '  START POINT EDGE INDEX =', il[0], '  PRESSURE =', self.faces[ft].edges[il[0]].sp.get_param('PRES', 0.0)
+                print '  END POINT EDGE INDEX =', il[1], '  PRESSURE =', self.faces[ft].edges[il[1]].sp.get_param('PRES', 0.0)
+            pass
+            tp.calc_avg_parameter_data_from_point_list(pl)
+            self.pl[pi].v = copy.deepcopy(tp.v)
+            self.pl[pi].params = copy.deepcopy(tp.params)
+
+            
+            # NOW WE NEED TO MAKE SURE ALL BLOCK EDGES REFERNCE THE BLOCK CORNER POINT
+            fkl_start = filter( ( lambda k: k[0:3] == pi ), kl)
+            for k in fkl_start :
+                self.el[k].sp = copy.deepcopy(self.pl[pi])
+                self.el[k].calc_dv()
+            pass
+            fkl_end = filter( ( lambda k: k[3:] == pi ), kl)
+            for k in fkl_end :
+                self.el[k].ep = copy.deepcopy(self.pl[pi])
+                self.el[k].calc_dv()
+            pass
+
+        pass
+
+
+        # CALCULATE NOMINAL BLOCK DIMENSIONS AND COORDIANTES
+        c = 0
+        # EDGES THAT GO FROM LOU TO HIU
+        for si in [ (n, n, n), (n, p, n), (n, p, p), (n, n, p) ] :
+            c += 1
+            # CHANGE ONE INDEX IN THE DIRECTION OF CONCERN TO GET END POINT INDEX
+            lei = list(si) ; lei[DIR.U] = p ; ei = tuple(lei)
+            edge_index = si + ei        
+            self.avg_dv[DIR.U] = self.avg_dv[DIR.U] + self.el[edge_index].dv
+        pass
+        self.avg_dv[DIR.U] = self.avg_dv[DIR.U] / float(c)
+
+        c = 0
+        # EDGES THAT GO FROM LOV TO HIV
+        for si in [ (n, n, n), (p, n, n), (p, n, p), (n, n, p) ] :
+            c += 1
+            # CHANGE ONE INDEX IN THE DIRECTION OF CONCERN TO GET END POINT INDEX
+            lei = list(si) ; lei[DIR.V] = p ; ei = tuple(lei)
+            edge_index = si + ei
+            self.avg_dv[DIR.V] = self.avg_dv[DIR.V] + self.el[edge_index].dv
+        pass
+        self.avg_dv[DIR.V] = self.avg_dv[DIR.V] / float(c)
+
+        c = 0
+        # EDGES THAT GO FROM LOW TO HIW
+        for si in [ (n, n, n), (p, n, n), (p, p, n), (n, p, n) ] :
+            c += 1
+            # CHANGE ONE INDEX IN THE DIRECTION OF CONCERN TO GET END POINT INDEX
+            lei = list(si) ; lei[DIR.W] = p ; ei = tuple(lei)
+            edge_index = si + ei        
+            self.avg_dv[DIR.W] = self.avg_dv[DIR.W] + self.el[edge_index].dv
+        pass
+        self.avg_dv[DIR.W] = self.avg_dv[DIR.W] / float(c)
+
+
         self.edge_sizes = [ constants.BIG_REAL, 0.0, -1.0 * constants.BIG_REAL ]  # MIN, AVG, MAX
         for kk, ev in self.el.items() :
             self.edge_sizes[constants.MIN] = min(self.edge_sizes[constants.MIN], ev.len)
@@ -748,14 +1192,6 @@ class block(object) :
             self.coords[r] = self.coords[r] / np.linalg.norm(self.coords[r])
         pass
 
-        
-        self.calc_geom_jar()
-        
-    pass
-
-    #----------------------------------------------------------------------------------------------------
-    # BLOCK GEOMETRY JACOBIAN ASPECT RATIO (JAR)
-    def calc_geom_jar(self) :
 
         # MIGHT WANT TO TWEEK THIS (WITHING ACCEPTABLE VALUES) TO ACCOMMODATE DISSIMILAR MESHES
         # 1/40 < TARGET_AR < 40  ???  
@@ -819,6 +1255,13 @@ class block(object) :
         ##     self.ne[1] = 2
         ##     self.ne[2] = 3
         ## pass
+
+        kl = self.faces.keys()
+        kl.sort()
+        for k in kl :
+            print self.faces[k]
+        pass
+
 
 
         print 'NE = \n', self.ne 

@@ -163,6 +163,9 @@ face_tags = [
     'MAX_U',
     'MAX_V',
     'MIN_U',
+    'MID_U',
+    'MID_V',
+    'MID_W',
     'JOIN_FACE_MASTER',
     'JOIN_FACE_SLAVE'
     ]
@@ -170,6 +173,23 @@ face_tags = [
 FTAGS = namedtuple('FTAGS',
                    face_tags, verbose = False)._make( int(2**i) for i in range(len(face_tags)) )
 
+
+# ONES BASED FACE INDEX NUMBER FROM CALCULIX
+#FACE = [ 'DUMMY', FTAGS.MIN_W, FTAGS.MAX_W, FTAGS.MIN_V, FTAGS.MAX_U, FTAGS.MAX_V, FTAGS.MIN_U ]
+def FACE_NUM(ftag) : return(int((math.log(ftag) / math.log(2.0)) + 1))
+## FACE_GRID_INDICES[int(math.log(float(FTAGS.MIN_W)) / math.log(2.0))] = [ 1, 2, 3, 4 ]
+# ONE'S BASED SO IT MATCHES CALCULIX 
+CORNER_POINT_INDEX = [
+    ( 0,  0,  0),   # DUMMY
+    (-1, -1, -1),   # 1
+    ( 1, -1, -1),   # 2
+    ( 1,  1, -1),   # 3
+    (-1,  1, -1),   # 4
+    (-1, -1,  1),   # 5
+    ( 1, -1,  1),   # 6
+    ( 1,  1,  1),   # 7
+    (-1,  1,  1)    # 8
+    ]
 
 
 # RIGHT HAND RULE NORMALS POINT IN
@@ -181,20 +201,22 @@ FTAGS = namedtuple('FTAGS',
 #  face 5: 3-7-8-4 -> FTAGS.MAX_V - 16
 #  face 6: 4-8-5-1 -> FTAGS.MIN_U - 32
 
-#face_num = (math.log(etag) / math.log(2.0)) + 1
 
 FACE_GRID_INDICES = [[]] * 6
-# WE WILL KEEP THESE VALUES ONES-BASED FOR CLARITY WHEN COMPARING TO THE CALCULIX FACE DEFINITIONS 
-FACE_GRID_INDICES[int(math.log(float(FTAGS.MIN_W)) / math.log(2.0))] = [ 1, 2, 3, 4 ] 
-FACE_GRID_INDICES[int(math.log(float(FTAGS.MAX_W)) / math.log(2.0))] = [ 5, 8, 7, 6 ] 
-FACE_GRID_INDICES[int(math.log(float(FTAGS.MIN_V)) / math.log(2.0))] = [ 1, 5, 6, 2 ] 
-FACE_GRID_INDICES[int(math.log(float(FTAGS.MAX_U)) / math.log(2.0))] = [ 2, 6, 7, 3 ] 
-FACE_GRID_INDICES[int(math.log(float(FTAGS.MAX_V)) / math.log(2.0))] = [ 3, 7, 8, 4 ] 
-FACE_GRID_INDICES[int(math.log(float(FTAGS.MIN_U)) / math.log(2.0))] = [ 4, 8, 5, 1 ] 
+# WE WILL KEEP THESE >VALUES< ONES-BASED FOR CLARITY WHEN COMPARING TO THE CALCULIX FACE DEFINITIONS 
+## FACE_GRID_INDICES[int(math.log(float(FTAGS.MIN_W)) / math.log(2.0))] = [ 1, 2, 3, 4 ] 
+## FACE_GRID_INDICES[int(math.log(float(FTAGS.MAX_W)) / math.log(2.0))] = [ 5, 8, 7, 6 ] 
+## FACE_GRID_INDICES[int(math.log(float(FTAGS.MIN_V)) / math.log(2.0))] = [ 1, 5, 6, 2 ] 
+## FACE_GRID_INDICES[int(math.log(float(FTAGS.MAX_U)) / math.log(2.0))] = [ 2, 6, 7, 3 ] 
+## FACE_GRID_INDICES[int(math.log(float(FTAGS.MAX_V)) / math.log(2.0))] = [ 3, 7, 8, 4 ] 
+## FACE_GRID_INDICES[int(math.log(float(FTAGS.MIN_U)) / math.log(2.0))] = [ 4, 8, 5, 1 ] 
 
-
-
-
+FACE_GRID_INDICES[ FACE_NUM(FTAGS.MIN_W) - 1 ] = [ 1, 2, 3, 4 ] 
+FACE_GRID_INDICES[ FACE_NUM(FTAGS.MAX_W) - 1 ] = [ 5, 8, 7, 6 ] 
+FACE_GRID_INDICES[ FACE_NUM(FTAGS.MIN_V) - 1 ] = [ 1, 5, 6, 2 ] 
+FACE_GRID_INDICES[ FACE_NUM(FTAGS.MAX_U) - 1 ] = [ 2, 6, 7, 3 ] 
+FACE_GRID_INDICES[ FACE_NUM(FTAGS.MAX_V) - 1 ] = [ 3, 7, 8, 4 ] 
+FACE_GRID_INDICES[ FACE_NUM(FTAGS.MIN_U) - 1 ] = [ 4, 8, 5, 1 ] 
 
 
 join_tags = [

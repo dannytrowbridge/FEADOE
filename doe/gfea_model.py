@@ -317,8 +317,9 @@ class grid(point) :
         self.name = 'G' + str(gid)
         self.id = gid
         self.bc = set()
+        self.norm_uvw = [0.0, 0.0, 0.0]
         self.uvw = [0, 0, 0]
-        self.tags = 0
+        #self.tags = 0    # NOW IN BASE CLASS
         self.mesh = None
         self.el = set()
         self.results = {}
@@ -346,54 +347,56 @@ class grid(point) :
         
         super(grid, self).__init__(0.0, 0.0, 0.0)
 
-        ng = len(gl)
-        if( ng == 0 ) : return
+        self.calc_avg_parameter_data_from_point_list(gl)
+
+        ## ng = len(gl)
+        ## if( ng == 0 ) : return
 
         
-        #print 'GRID:', self
+        ## #print 'GRID:', self
 
-        #print 'GL = ', gl
-        # AVERAGE X, Y, Z
-        for g in gl :
-            #print 'TYPE self = ', type(self), '   TYPE g =', type(g)
-            for dd in range(len(self.v)) :
-                self.v[dd] += g.v[dd]
-            pass
-        pass
-        for dd in range(len(self.v)) :
-             self.v[dd] /= float(ng) 
-        pass
+        ## #print 'GL = ', gl
+        ## # AVERAGE X, Y, Z
+        ## for g in gl :
+        ##     #print 'TYPE self = ', type(self), '   TYPE g =', type(g)
+        ##     for dd in range(len(self.v)) :
+        ##         self.v[dd] += g.v[dd]
+        ##     pass
+        ## pass
+        ## for dd in range(len(self.v)) :
+        ##      self.v[dd] /= float(ng) 
+        ## pass
 
-        # AVERAGE ANCILLARY DATA - IF POSSIBLE
-        pd = {}
+        ## # AVERAGE ANCILLARY DATA - IF POSSIBLE
+        ## pd = {}
 
-        # SUM
-        for g in gl :
-            #print 'LOOKING AT GRID PARAMS FOR GRID;', g
-            for k, v in g.params.items() :
-                #print '  LOOKING AT PARAM :', k
-                if( k not in pd ) :
-                    pd[k] = [v, 1]  # [ sum, count ] pairs
-                    #print 'FIRST TIME FOR PARAM  VAL=', v
-                else :
-                    if( not isinstance(v, str) ) : # CAN'T SUM STRING PARAMS
-                        pd[k][0] += v
-                        pd[k][1] += 1
-                        #print pd[k][1], ' TIME FOR PARAM  VAL=', v, '   RUNNING TOT = ', pd[k][0] 
-                    pass
-                pass
-            pass
-        pass
+        ## # SUM
+        ## for g in gl :
+        ##     #print 'LOOKING AT GRID PARAMS FOR GRID;', g
+        ##     for k, v in g.params.items() :
+        ##         #print '  LOOKING AT PARAM :', k
+        ##         if( k not in pd ) :
+        ##             pd[k] = [v, 1]  # [ sum, count ] pairs
+        ##             #print 'FIRST TIME FOR PARAM  VAL=', v
+        ##         else :
+        ##             if( not isinstance(v, str) ) : # CAN'T SUM STRING PARAMS
+        ##                 pd[k][0] += v
+        ##                 pd[k][1] += 1
+        ##                 #print pd[k][1], ' TIME FOR PARAM  VAL=', v, '   RUNNING TOT = ', pd[k][0] 
+        ##             pass
+        ##         pass
+        ##     pass
+        ## pass
 
-        # NOW AVERAGE
-        for k, v  in pd.items() :
-            if( not isinstance(v[0], str) ) :
-                self.set_param(k, v[0] / float(v[1]))
-            else :
-               self.set_param(k, v[0])
-            pass
-            #print 'PARAM ', k, '  AVG VAL = ', self.get_param(k, -1.0)
-        pass
+        ## # NOW AVERAGE
+        ## for k, v  in pd.items() :
+        ##     if( not isinstance(v[0], str) ) :
+        ##         self.set_param(k, v[0] / float(v[1]))
+        ##     else :
+        ##        self.set_param(k, v[0])
+        ##     pass
+        ##     #print 'PARAM ', k, '  AVG VAL = ', self.get_param(k, -1.0)
+        ## pass
 
     pass
         
@@ -802,39 +805,9 @@ class mesh(object) :
                 vl[3] = vector(pl[4], pl[5])
                 
                 for iw in range(b.ng[DIR.W]) :
-                    iuvw[DIR.W] = iw
-                    uvw[DIR.W] = duvw[DIR.W] * float(iw)
-                    # AVOID ROUND OFF
-                    if( iw == 0 ) : uvw[DIR.W] = 0.0
-                    if( iw == ( b.ng[DIR.W] - 1 ) ) : uvw[DIR.W] = 1.0
-                    
-                    # SCALE THE W DIRECTION VECTOR
-                    pt = vl[3].point_from_scale(uvw[DIR.W])
 
-                    self.model.gid_max += 1
-                    gid = self.model.gid_max
-                    
 
-                    g = grid(gid, pt.v[LOC.X], pt.v[LOC.Y], pt.v[LOC.Z], pt.params)
-                    g.tags = 0 # HANDLED BELOW FOR CLARITY
-                    g.uvw[DIR.U] = iu
-                    g.uvw[DIR.V] = iv
-                    g.uvw[DIR.W] = iw
-                    g.mesh = self
-                    self.gl[iu, iv, iw] = g
-                pass # W LOOP
-            pass # V LOOP
-        pass # U LOOP
-    
-        print 'GOING TO ASSIGN GRID TAGS'
-
-        # GRID TAGS
-        for iu in range(b.ng[DIR.U]) :
-            
-            for iv in range(b.ng[DIR.V]) :
-            
-                for iw in range(b.ng[DIR.W]) :
-
+                    # BEGIN FIGURE TAGS 
                     gtags = 0
 
                     if( iu == 0 ) : gtags |= GTAGS.MIN_U
@@ -890,24 +863,157 @@ class mesh(object) :
                     pass
 
 
+                    # DON'T DEFINE THE GRIDS WE DON'T NEED
+                    if( gtags & GTAGS.PENDING_DELETE ) :
+                        continue
+                    pass
+                
+                    # END FIGURE TAGS
+
+
+                    iuvw[DIR.W] = iw
+                    uvw[DIR.W] = duvw[DIR.W] * float(iw)
+                    # AVOID ROUND OFF
+                    if( iw == 0 ) : uvw[DIR.W] = 0.0
+                    if( iw == ( b.ng[DIR.W] - 1 ) ) : uvw[DIR.W] = 1.0
                     
-                    self.gl[iu, iv, iw].tags = gtags
-                    #print self.gl[iu, iv, iw]
-                    
+                    # SCALE THE W DIRECTION VECTOR
+                    pt = vl[3].point_from_scale(uvw[DIR.W])
+
+                    self.model.gid_max += 1
+                    gid = self.model.gid_max
+                
+
+                    g = grid(gid, pt.v[LOC.X], pt.v[LOC.Y], pt.v[LOC.Z], pt.params)
+                    for d in [ DIR.U, DIR.V, DIR.W ] :
+                        g.norm_uvw[d] = uvw[d]
+                    pass
+                    #print 'NORM_UVW = ', g.norm_uvw
+                    g.uvw[DIR.U] = iu
+                    g.uvw[DIR.V] = iv
+                    g.uvw[DIR.W] = iw
+                    g.tags = gtags
+                    g.mesh = self
+                    self.gl[iu, iv, iw] = g
                 pass # W LOOP
             pass # V LOOP
         pass # U LOOP
+
+
+        # TBD TBD TBD - LETS HANDLE THIS AT OUTPUT TIME
+        
+        # DEFINE PER-FACE PARAMETERS (NOT VOLUME PARAMETERS)
+        #  RIGHT NOW IT IS ONLY PRESSURE - 'PRES'
+        #  SOMEHOW I NEED EXPOSE THIS SO THE USER CAN ADD MORE PER-FACE PARAMETERS
+
+        ## face_params = [ 'PRES' ]
+        
+        ## f = b.faces[FTAGS.MIN_U]
+
+        ## ptnn = f.edges[0].sp
+        ## ptpn = f.edges[1].sp
+        ## ptpp = f.edges[2].sp
+        ## ptnp = f.edges[3].sp
+
+        ## v01 = f.edges[0]
+        ## v32 = f.edges[2].vector_from_flip()
+
+        
+        ## fgl = self.get_grid_list_from_tags(GTAGS.MIN_U)
+        ## # VW
+        ## for fg in fgl :
+            
+
+
+
+        
+        
+
+
+
+        # MOVED THIS TO THE SECTION ABOVE
+        ## print 'GOING TO ASSIGN GRID TAGS'
+
+        ## # GRID TAGS
+        ## for iu in range(b.ng[DIR.U]) :
+            
+        ##     for iv in range(b.ng[DIR.V]) :
+            
+        ##         for iw in range(b.ng[DIR.W]) :
+
+        ##             gtags = 0
+
+        ##             if( iu == 0 ) : gtags |= GTAGS.MIN_U
+        ##             if( iu == (b.ng[DIR.U]-1) ) : gtags |= GTAGS.MAX_U
+        ##             if( iu in center_line_indices[DIR.U] ) : gtags |= GTAGS.CENTER_U
+
+        ##             if( iv == 0 ) : gtags |= GTAGS.MIN_V
+        ##             if( iv == (b.ng[DIR.V]-1) ) : gtags |= GTAGS.MAX_V
+        ##             if( iv in center_line_indices[DIR.V] ) : gtags |= GTAGS.CENTER_V
+
+        ##             if( iw == 0 ) : gtags |= GTAGS.MIN_W
+        ##             if( iw == (b.ng[DIR.W]-1) ) : gtags |= GTAGS.MAX_W
+        ##             if( iw in center_line_indices[DIR.W] ) : gtags |= GTAGS.CENTER_W
+
+        ##             # TAG MID GRIDS
+        ##             if( ( iu % 2 == 0 ) and ( iv % 2 == 0 ) and ( iw % 2 == 0 ) ) :
+        ##                 gtags |= GTAGS.ELEMENT_CORNER
+        ##             pass
+        ##             if( ( iu % 2 == 1 ) and ( iv % 2 == 1 ) and ( iw % 2 == 1 ) ) :
+        ##                 gtags |= GTAGS.ELEMENT_MID_VOL
+        ##                 gtags |= GTAGS.ANCILLARY
+        ##                 #gtags |= GTAGS.PENDING_DELETE
+        ##             pass
+                        
+        ##             if( ( iu % 2 == 0 ) and ( iv % 2 == 0 ) and ( iw % 2 == 1 ) ) :
+        ##                 gtags |= GTAGS.ELEMENT_MID_EDGE
+        ##                 gtags |= GTAGS.ELEMENT_MID_EDGE_W
+        ##             pass
+        ##             if( ( iu % 2 == 0 ) and ( iv % 2 == 1 ) and ( iw % 2 == 1 ) ) :
+        ##                 gtags |= GTAGS.ELEMENT_MID_FACE
+        ##                 gtags |= GTAGS.ELEMENT_MID_FACE_VW
+        ##                 gtags |= GTAGS.PENDING_DELETE
+        ##             pass
+                        
+        ##             if( ( iu % 2 == 0 ) and ( iv % 2 == 1 ) and ( iw % 2 == 0 ) ) :
+        ##                 gtags |= GTAGS.ELEMENT_MID_EDGE
+        ##                 gtags |= GTAGS.ELEMENT_MID_EDGE_V
+        ##             pass
+        ##             if( ( iu % 2 == 1 ) and ( iv % 2 == 1 ) and ( iw % 2 == 0 ) ) :
+        ##                 gtags |= GTAGS.ELEMENT_MID_FACE
+        ##                 gtags |= GTAGS.ELEMENT_MID_FACE_UV
+        ##                 gtags |= GTAGS.PENDING_DELETE
+        ##             pass
+                        
+        ##             if( ( iu % 2 == 1 ) and ( iv % 2 == 0 ) and ( iw % 2 == 0 ) ):
+        ##                 gtags |= GTAGS.ELEMENT_MID_EDGE
+        ##                 gtags |= GTAGS.ELEMENT_MID_EDGE_U
+        ##             pass
+        ##             if( ( iu % 2 == 1 ) and ( iv % 2 == 0 ) and ( iw % 2 == 1 ) ) :
+        ##                 gtags |= GTAGS.ELEMENT_MID_FACE
+        ##                 gtags |= GTAGS.ELEMENT_MID_FACE_UW
+        ##                 gtags |= GTAGS.PENDING_DELETE
+        ##             pass
+
+
+                    
+        ##             self.gl[iu, iv, iw].tags = gtags
+        ##             #print self.gl[iu, iv, iw]
+                    
+        ##         pass # W LOOP
+        ##     pass # V LOOP
+        ## pass # U LOOP
 
         # TBD: PROBABLY SHOULD WORK OUT NOT ALLOCATING THESE GRIDS
     
         #self.print_grids()
         #print 'DELETE UN-NEEDED GRIDS'
-        dgl = self.get_grid_list_from_tags(GTAGS.PENDING_DELETE)
-        for g in dgl :
-            del self.gl[g.uvw[DIR.U], g.uvw[DIR.V], g.uvw[DIR.W]]
-            self.gl[g.uvw[DIR.U], g.uvw[DIR.V], g.uvw[DIR.W]] = None
-        pass
-        del dgl
+        ## dgl = self.get_grid_list_from_tags(GTAGS.PENDING_DELETE)
+        ## for g in dgl :
+        ##     del self.gl[g.uvw[DIR.U], g.uvw[DIR.V], g.uvw[DIR.W]]
+        ##     self.gl[g.uvw[DIR.U], g.uvw[DIR.V], g.uvw[DIR.W]] = None
+        ## pass
+        ## del dgl
         #self.print_grids()
         
         #print 'GOING TO DEFINE SOME ELSETS FOR EACH INCREMENT IN EACH DIR'
@@ -2144,6 +2250,9 @@ class join(object) :
 
         if( self.type == JTAGS.MERGE ) :
             print 'MERGE JOIN'
+
+            #print 'jface_a.face_gl LENGTH =', len(self.jface_a.face_gl)
+            #print 'jface_b.face_gl LENGTH =', len(self.jface_b.face_gl)
             
             # SET THE SLAVE FACE TO BE THE ONE WITH THE MOST GRID POINTS ON THE FACE
             if( len(self.jface_a.face_gl) >= len(self.jface_b.face_gl) ) :
@@ -2155,15 +2264,24 @@ class join(object) :
                 self.slave = self.jface_b
                 self.master = self.jface_a
             pass
-
+            
+            #print 'FIND SLAVE SUFACE ELEMENTS #GRIDS = ', len( self.slave.face_gl )
             self.slave.face_el.clear()
-            for sg in self.slave.gl :
+            for sg in self.slave.face_gl :
                 sg.tags |= GTAGS.JOIN_SLAVE
-                gel = list(sg.el)
-                for g in gel :
-                    self.slave.face_el.add(g)
+                #print 'slave looking at grid ', sg.id,  'number of elements = ', len(sg.el)
+                sel = list(sg.el)
+                for e in sel :
+                    self.slave.face_el.add(e)
                 pass
             pass
+        
+            #tel = list(self.slave.face_el)
+            #tel.sort(  key = lambda e : e.id )
+            #face_num = int( ( math.log(self.slave.face_grid_tag) / math.log(2.0) ) + 1 )
+            #for se in tel :
+            #    print 'SLAVE ELEMENT # ', se.id, '   FACE # ', face_num
+            #pass
 
             # FROM CALCULIX MANUAL... face_num
             #  face 1: 1-2-3-4 -> FTAGS.MIN_W =  1 = GTAGS.MIN_W
@@ -2174,7 +2292,7 @@ class join(object) :
             #  face 6: 4-8-5-1 -> FTAGS.MIN_U = 32 = GTAGS.MIN_U
 
 
-TBD - WE REALLY OUGHT TO JUST DO THIS DURING OUTPUT
+            #TBD - WE REALLY OUGHT TO JUST DO THIS DURING OUTPUT
 
             ## tel = list(self.slave.face_el)
             ## tel.sort(  key = lambda e : e.id )
@@ -2186,23 +2304,25 @@ TBD - WE REALLY OUGHT TO JUST DO THIS DURING OUTPUT
             ## ftel = filter( ( lambda ee : ee.tags & ft ), tel )
             ## fgi = FACE_GRID_INDICES[face_num - 1]
            
-
-
-
-
-
-
-
-
         
+            #print 'FIND MASTER SUFACE ELEMENTS #GRIDS = ', len( self.master.face_gl )
             self.master.face_el.clear()
-            for mg in self.master.gl :
+            for mg in self.master.face_gl :
                 mg.tags |= GTAGS.JOIN_MASTER
-                gel = list(mg.el)
-                for g in gel :
-                    self.master.face_el.add(g)
+                #print 'master looking at grid ', mg.id,  'number of elements = ', len(mg.el)
+                mel = list(mg.el)
+                for e in mel :
+                    self.master.face_el.add(e)
                 pass
             pass
+        
+            #tel = list(self.master.face_el)
+            #tel.sort(  key = lambda e : e.id )
+            #face_num = int( ( math.log(self.master.face_grid_tag) / math.log(2.0) ) + 1 )
+            #for me in tel :
+            #    print 'SLAVE ELEMENT # ', me.id, '   FACE # ', face_num
+            #pass
+
 
 
 
@@ -3918,6 +4038,7 @@ class model(object) :
         feq = '{}, {}, {}'
         fp.write('*' * 80 + '\n')
         for j in self.joins :
+            jf = j.slave
             fp.write('** <BEGIN> ' + '~-~' * 5 + ' ' + jf.name  +' JOIN EQUATIONS\n')
             glass = j.slave.grid_associations.keys()
             glass.sort(key=lambda g : g.id)
@@ -4028,6 +4149,70 @@ class model(object) :
                 #pass
             pass
         pass
+
+
+
+        fp.write('*' * 80 + '\n')
+        feq = '{}, S{}'
+        
+        for j in self.joins :
+            if( j.type == JTAGS.MERGE ) :
+                
+                jfs = j.slave
+                jfm = j.master            
+
+                fp.write('** <BEGIN> ' + '~-~' * 5 + ' ' + jfs.name  +' JOIN SLAVE SURFACE\n')
+                fp.write('*SURFACE, NAME=' + jfs.name + 'S, TYPE=ELEMENT\n')
+                
+                # FROM CALCULIX MANUAL... face_num
+                #  face 1: 1-2-3-4 -> FTAGS.MIN_W =  1 = GTAGS.MIN_W
+                #  face 2: 5-8-7-6 -> FTAGS.MAX_W =  2 = GTAGS.MAX_W
+                #  face 3: 1-5-6-2 -> FTAGS.MIN_V =  4 = GTAGS.MIN_V
+                #  face 4: 2-6-7-3 -> FTAGS.MAX_U =  8 = GTAGS.MAX_U
+                #  face 5: 3-7-8-4 -> FTAGS.MAX_V = 16 = GTAGS.MAX_V
+                #  face 6: 4-8-5-1 -> FTAGS.MIN_U = 32 = GTAGS.MIN_U
+
+                tel = list(jfs.face_el)
+                tel.sort(  key = lambda e : e.id )
+                face_num = int( ( math.log(jfs.face_grid_tag) / math.log(2.0) ) + 1 )
+                for se in tel :
+                    fp.write(feq.format(se.id, face_num) + '\n')
+                pass
+
+                fp.write('** <END> ' + '~-~' * 5 + ' ' + jfs.name  +' JOIN SLAVE SURFACE\n')
+            
+                fp.write('** <BEGIN> ' + '~-~' * 5 + ' ' + jfm.name  +' JOIN MASTER SURFACE\n')
+                fp.write('*SURFACE, NAME=' + jfm.name + 'S, TYPE=ELEMENT\n')
+                
+                # FROM CALCULIX MANUAL... face_num
+                #  face 1: 1-2-3-4 -> FTAGS.MIN_W =  1 = GTAGS.MIN_W
+                #  face 2: 5-8-7-6 -> FTAGS.MAX_W =  2 = GTAGS.MAX_W
+                #  face 3: 1-5-6-2 -> FTAGS.MIN_V =  4 = GTAGS.MIN_V
+                #  face 4: 2-6-7-3 -> FTAGS.MAX_U =  8 = GTAGS.MAX_U
+                #  face 5: 3-7-8-4 -> FTAGS.MAX_V = 16 = GTAGS.MAX_V
+                #  face 6: 4-8-5-1 -> FTAGS.MIN_U = 32 = GTAGS.MIN_U
+
+                tel = list(jfm.face_el)
+                tel.sort(  key = lambda e : e.id )
+                face_num = int( ( math.log(jfm.face_grid_tag) / math.log(2.0) ) + 1 )
+                for me in tel :
+                    fp.write(feq.format(me.id, face_num) + '\n')
+                pass
+            
+                fp.write('** <END> ' + '~-~' * 5 + ' ' + jfm.name  +' JOIN MASTER SURFACE\n')
+
+
+                fp.write('*TIE \n')
+                fp.write(jfs.name + 'S, '+ jfm.name + 'S' + '\n')
+
+                fp.write('*' * 80 + '\n')
+
+            
+            pass
+
+
+
+
             
         
         for b in self.blocks :
@@ -4199,9 +4384,11 @@ class model(object) :
         ##     pass
         ## pass
 
+        vl = [None] * 3 # WORKING VECTOR LIST
 
         ## face_tags = [ FTAGS.MAX_U, FTAGS.MIN_U, FTAGS.MAX_V, FTAGS.MIN_V, FTAGS.MAX_W, FTAGS.MIN_W ]
         ## face_tags_exploded = [ FTAGS.MAX_W, FTAGS.MIN_W ]
+        print 'WRITE PRESSURE'
         for b in self.blocks :
             m = b.mesh
             # IF THIS IS AN EXPLODED BLOCK ONLY PUT PRESSURES ON THE +/- W FACES
@@ -4219,65 +4406,189 @@ class model(object) :
             #print 'FACE_TAGS =', face_tags
             
             for ft in face_tags :
-                #print 'ft = ', ft
-                face_num = int( ( math.log(ft) / math.log(2.0) ) + 1 )
-                #print 'FACENUM = ', face_num
+                print 'FACETAG = ', ft
+                face_num = constants.FACE_NUM(ft)
+                print 'LOOKING AT FACENUM = ', face_num
 
                 ftel = filter( ( lambda ee : ee.tags & ft ), tel )
-                
-                #print 'ftel len = ', len(ftel)
-                #for e in ftel :
-                #    print e
-                #pass
+                #ftel.sort(  key = lambda e : e.id )
 
-                
-                # FROM CALCULIX MANUAL...
-                #  face 1: 1-2-3-4 -> FTAGS.MIN_W - 1
-                #  face 2: 5-8-7-6 -> FTAGS.MAX_W - 2
-                #  face 3: 1-5-6-2 -> FTAGS.MIN_V - 4
-                #  face 4: 2-6-7-3 -> FTAGS.MAX_U - 8
-                #  face 5: 3-7-8-4 -> FTAGS.MAX_V - 16
-                #  face 6: 4-8-5-1 -> FTAGS.MIN_U - 32
+                # WE DO ASSUME THAT THE START AND END POINTS OF NEIGHBORING EDGES
+                # OF A GIVE BLOCK FACE DEFINITION ARE IDENTICAL, SO WE ONLY REFRENCE THE
+                # START POINT HERE.
+                # THIS IS AN ARTIFACT OF HOW WE ALWAYS BUILD THE BLOCK FACES.
+                bface = b.faces[ft]
+                if( ft == FTAGS.MIN_U ) :
+                    fnn = bface.edges[3].sp
+                    fpn = bface.edges[0].sp
+                    fnp = bface.edges[2].sp
+                    fpp = bface.edges[1].sp
+                    # V -> W
+                    interp_dirs = [ DIR.V, DIR.W ]
+                pass
+                if( ft == FTAGS.MAX_U ) :
+                    fnn = bface.edges[0].sp
+                    fpn = bface.edges[3].sp
+                    fnp = bface.edges[1].sp
+                    fpp = bface.edges[2].sp
+                    # V -> W
+                    interp_dirs = [ DIR.V, DIR.W ]
+                pass
 
-                
+            
+                if( ft == FTAGS.MIN_V ) :
+                    fnn = bface.edges[0].sp
+                    fpn = bface.edges[3].sp
+                    fnp = bface.edges[1].sp
+                    fpp = bface.edges[2].sp
+                    # U -> W
+                    interp_dirs = [ DIR.U, DIR.W ]
+                pass
+                if( ft == FTAGS.MAX_V ) :
+                    fnn = bface.edges[3].sp
+                    fpn = bface.edges[0].sp
+                    fnp = bface.edges[2].sp
+                    fpp = bface.edges[1].sp
+                    # U -> W
+                    interp_dirs = [ DIR.U, DIR.W ]
+                pass
+            
+                if( ft == FTAGS.MIN_W ) :
+                    fnn = bface.edges[0].sp
+                    fpn = bface.edges[1].sp
+                    fnp = bface.edges[3].sp
+                    fpp = bface.edges[2].sp
+                    # U -> V
+                    interp_dirs = [ DIR.U, DIR.V ]
+                pass
+                if( ft == FTAGS.MAX_W ) :
+                    fnn = bface.edges[0].sp
+                    fpn = bface.edges[3].sp
+                    fnp = bface.edges[1].sp
+                    fpp = bface.edges[2].sp
+                    # U -> V
+                    interp_dirs = [ DIR.U, DIR.V ]
+                pass
+
+                print 'fnn pressure = ',  fnn.get_param('PRES', 0.0)
+                print 'fpn pressure = ',  fpn.get_param('PRES', 0.0)
+                print 'fnp pressure = ',  fnp.get_param('PRES', 0.0)
+                print 'fpp pressure = ',  fpp.get_param('PRES', 0.0)
+
+                psum = 0.0
+                psum += fnn.get_param('PRES', 0.0)
+                psum += fpn.get_param('PRES', 0.0)
+                psum += fnp.get_param('PRES', 0.0)
+                psum += fpp.get_param('PRES', 0.0)
+                psum = psum / 4.0
+                if( abs(psum) < constants.TOL ) : continue
+
+
+           
+                vl[0] = vector(fnn, fpn)
+                vl[1] = vector(fnp, fpp)
+
+                # NOTE: WE STORE ONES-BASED INDICES IN THE FACE_GRID_INDICES LIST
+                #    TO MATCH CALCULIX NOTATION
                 fgi = FACE_GRID_INDICES[face_num - 1]
 
-                for e in ftel :
 
-                    facep = 0.0
+                # GET PRESSURES FROM BLOCK FACES IN CASE THERE ARE PER-FACE PRESSURES
+
+                # THE SCALE FACTORS STORED IN THE GRID'S norm_uvw MEMBER VARIABLE
+                # ARE ALWAYS MEASURED FROM THE MINIMUM PARAMETER PLANE
+                
+                for e in ftel :
+                    print 'LOOKING AT ELEMENT =', e
+
+                    face_pressure = 0.0
+                    # AVERAGE PRESSURE FOR ALL GRIDS ON THE ELEMENT FACE
                     for i in fgi :
-                        # NOTE: WE STORE ONES-BASED INDICES IN THE FACE_GRID_INDICES LIST
-                        #    TO MATCH CALCULIX NOTATION
-                        g = e.gl[i-1] 
-                        gp = g.get_param('PRES', 0.0)
-                        #if( gp is None ) : continue
-                        facep = facep + gp
+                        print 'FACE GRID INDEX=',i
+                        g = e.gl[i-1]
+                        print 'LOOKING AT ELEMENT FACE GRID -=>', g
+                        print 'G.NORM_UVW =', g.norm_uvw
+                        # WE DON'T ACTUALLY USE THE MESH GRID'S PRESSURE VALUE
+                        # BUT SAMPLE THE PRESSURE OFF THE BLOCK FACE AT THE SAME
+                        # PARAMETER VALUES AS WHERE THE GRID WAS DEFINED AT.
+                        # THIS ALLOWS FOR DISCONTINUITY IN THE APPLIED SURFACE PRESSURE
+                        # AT THE BLOCK EDGES.
+                        # ALL THE OTHER PARAMETERS ARE AVERAGED THROUGH OUT THE VOLUME
+                        # OF THE BLOCK
+                        scale_factor_1 = g.norm_uvw[ interp_dirs[0] ]
+                        scale_factor_2 = g.norm_uvw[ interp_dirs[1] ]
+                        print 'SCALE FACTOR 1 =', scale_factor_1
+                        print 'SCALE FACTOR 2 =', scale_factor_2
+                        pl0 = vl[0].point_from_scale( scale_factor_1 )
+                        pl1 = vl[1].point_from_scale( scale_factor_1 )
+                        vl[2] = vector(pl0, pl1)
+                        pl = vl[2].point_from_scale( scale_factor_2 )
+                        gp = pl.get_param('PRES', 0.0)
+                        face_pressure = face_pressure + gp
                     pass
 
-                    facep = facep / float( len(fgi) )
+                    face_pressure = face_pressure / float( len(fgi) )
+
+                    
+                    
+
+                
+
+
+                
+                ## #print 'ftel len = ', len(ftel)
+                ## #for e in ftel :
+                ## #    print e
+                ## #pass
+
+                
+                ## # FROM CALCULIX MANUAL...
+                ## #  face 1: 1-2-3-4 -> FTAGS.MIN_W - 1
+                ## #  face 2: 5-8-7-6 -> FTAGS.MAX_W - 2
+                ## #  face 3: 1-5-6-2 -> FTAGS.MIN_V - 4
+                ## #  face 4: 2-6-7-3 -> FTAGS.MAX_U - 8
+                ## #  face 5: 3-7-8-4 -> FTAGS.MAX_V - 16
+                ## #  face 6: 4-8-5-1 -> FTAGS.MIN_U - 32
+
+                
+                ## fgi = FACE_GRID_INDICES[face_num - 1]
+
+                ## for e in ftel :
+
+                ##     face_pressure = 0.0
+                ##     for i in fgi :
+                ##         # NOTE: WE STORE ONES-BASED INDICES IN THE FACE_GRID_INDICES LIST
+                ##         #    TO MATCH CALCULIX NOTATION
+                ##         g = e.gl[i-1] 
+                ##         gp = g.get_param('PRES', 0.0)
+                ##         #if( gp is None ) : continue
+                ##         face_pressure = face_pressure + gp
+                ##     pass
+
+                ##     face_pressure = face_pressure / float( len(fgi) )
 
                     if( b.defined_by_tag == BTAGS.EXPLODED ) :
 
                         if( ft == FTAGS.MAX_W ) :
-                            if( facep < 0.0 ) : continue # WILL BE APPLIED TO THE -W FACE
+                            if( face_pressure < 0.0 ) : continue # WILL BE APPLIED TO THE -W FACE
                         pass
 
                         if( ft == FTAGS.MIN_W ) :
-                            if( facep > 0.0 ) : continue # WILL BE APPLIED TO THE +W FACE
-                            if( facep < 0.0 ) :
-                                facep = facep * (-1.0)
+                            if( face_pressure > 0.0 ) : continue # WILL BE APPLIED TO THE +W FACE
+                            if( face_pressure < 0.0 ) :
+                                face_pressure = face_pressure * (-1.0)
                             pass
                         pass
 
                     pass
-                    if( abs(facep) < constants.TOL ) : continue
-                    fp.write(str(e.id) + ', P' + str(face_num) + ', ' + str(facep) + '\n')
+                    if( abs(face_pressure) < constants.TOL ) : continue
+                    s = str(e.id) + ', P' + str(face_num) + ', ' + str(face_pressure) + '\n'
+                    fp.write(s)
+                    print s
 
                 pass
             pass
-            
-
-                
+                            
             ## for e in tel  :
             ##     pres = e.avg_grid.get_param('PRES')
             ##     if( pres is None ) : continue

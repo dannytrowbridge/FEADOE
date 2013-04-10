@@ -8,7 +8,7 @@ import math
 
 ## http://code.activestate.com/recipes/52192-add-a-method-to-a-class-instance-at-runtime/
 
-anal = doe_analysis.analysis('PLT_SMALL_RX')
+anal = doe_analysis.analysis('PLT_SMALL_zz')
 
 #anal.add_indep_var('NEX', [5, 10, 15, 20, 25, 30])
 anal.add_indep_var('NEX', [40])
