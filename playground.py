@@ -7,14 +7,7 @@ from doe.constants import LOC, DIR, DOF, GTAGS, ETAGS, FTAGS, JTAGS
 import math
 import copy
 
-## http://code.activestate.com/recipes/52192-add-a-method-to-a-class-instance-at-runtime/
-
-anal = doe_analysis.analysis('PLAYGROUND')
-
-#anal.add_indep_var('NEX', [5, 10, 15, 20, 25, 30])
-anal.add_indep_var('NEX', [40])
-#anal.add_indep_var('NEX', [1, 3, 5, 10, 20, 30, 40, 60, 80, 100 ])
-#anal.add_indep_var('NEX', [25])
+anal = doe_analysis.analysis('PGV1')
 anal.add_indep_var('Pressure', [-10000.0])
 anal.add_indep_var('matty', ['Alloy_713LC'])
 
@@ -30,8 +23,7 @@ def define_model(self) :
     mat.set_number_of_output_divisions(1)
 
 
-    common_params =  {'TEMP': 0.0, 'PRES': 0.0 }
-    common_params_L =  {'TEMP': 0.0, 'PRES': self.Pressure }
+    common_params =  { 'PRES': 0.0 }
 
     # FROM CALCULIX MANUAL...
     #  face 1: 1-2-3-4 -> FTAGS.MIN_W - 1
@@ -79,15 +71,58 @@ def define_model(self) :
 ##
 ##        -1,-1,-1                 1,-1,-1
 
-    p1 = point(0.0, 0.0, 0.0, common_params)
-    p2 = point(5.0, 0.0, 0.0, common_params)
-    p3 = point(5.0, 1.0, 0.0, common_params)
-    p4 = point(0.0, 1.0, 0.0, common_params)
-    p5 = point(0.0, 0.0, 1.0, common_params)
-    p6 = point(5.0, 0.0, 1.0, common_params)
-    p7 = point(5.0, 1.0, 1.0, common_params)
-    p8 = point(0.0, 1.0, 1.0, common_params)
 
+    xlox = 0.0
+    xhix = 1.0
+    xoffx = -0.5
+    
+    xloy = -0.5
+    xhiy = 0.5
+    xoffy = 0.0
+    
+    xloz = 0.0
+    xhiz = 4.0
+    xoffz = 0.0
+    
+    px1 = point(xlox + xoffx, xloy + xoffy, xloz + xoffz, common_params)
+    px2 = point(xhix + xoffx, xloy + xoffy, xloz + xoffz, common_params)
+    px3 = point(xhix + xoffx, xhiy + xoffy, xloz + xoffz, common_params)
+    px4 = point(xlox + xoffx, xhiy + xoffy, xloz + xoffz, common_params)
+    px5 = point(xlox + xoffx, xloy + xoffy, xhiz + xoffz, common_params)
+    px6 = point(xhix + xoffx, xloy + xoffy, xhiz + xoffz, common_params)
+    px7 = point(xhix + xoffx, xhiy + xoffy, xhiz + xoffz, common_params)
+    px8 = point(xlox + xoffx, xhiy + xoffy, xhiz + xoffz, common_params)
+
+
+    bname = 'X'
+    blk_x = self.add_block(bname)
+    blk_x.set_material(mat)
+    #blk_x.force_element_count([2, 12, 12])
+    # HAVE TO CALL DEFINE BLOCK ROUTINE LAST 
+    blk_x.define_block_from_points(px1, px2, px3, px4, px5, px6, px7, px8)
+
+
+
+    lox = 0.0
+    hix = 4.0
+    offx = 0.0
+    
+    loy = -0.5
+    hiy = 0.5
+    offy = 0.0
+    
+    loz = -0.5
+    hiz = 0.5
+    offz = 0.0
+    
+    p1 = point(lox + offx, loy + offy, loz + offz, common_params)
+    p2 = point(hix + offx, loy + offy, loz + offz, common_params)
+    p3 = point(hix + offx, hiy + offy, loz + offz, common_params)
+    p4 = point(lox + offx, hiy + offy, loz + offz, common_params)
+    p5 = point(lox + offx, loy + offy, hiz + offz, common_params)
+    p6 = point(hix + offx, loy + offy, hiz + offz, common_params)
+    p7 = point(hix + offx, hiy + offy, hiz + offz, common_params)
+    p8 = point(lox + offx, hiy + offy, hiz + offz, common_params)
 
 
     p2_L = copy.deepcopy(p2)
@@ -105,7 +140,7 @@ def define_model(self) :
 
 
     
-    # FROM CALCULIX MANUAL...
+    # FROM CALCULIX MANUAL... (RIGHT HAND NORMALS POINT IN)
     #  face 1: 1-2-3-4 -> FTAGS.MIN_W - 1
     #  face 2: 5-8-7-6 -> FTAGS.MAX_W - 2
     #  face 3: 1-5-6-2 -> FTAGS.MIN_V - 4
@@ -139,6 +174,7 @@ def define_model(self) :
     blk_a.set_material(mat)
     blk_a.define_block_from_faces(f1, f2, f3, f4_L, f5, f6)
 
+
     self.plot_blocks()
 
 
@@ -152,8 +188,8 @@ def define_model(self) :
     
 
     #                              NAME,  BLOCK,   GRID_TAG
-    #self.add_block_face_rigid_join('ARB', ms['A'], GTAGS.MIN_U,
-    #                                      ms['B'], GTAGS.MIN_V) 
+    self.add_block_face_rigid_join('XRA', blk_x, GTAGS.MIN_W,
+                                          blk_a, GTAGS.MIN_U) 
 
     #                              BLOCK,   GRID_TAG,    HINGE_AXIS_DIR
     #self.add_block_face_hinge_join('AHB', ms['A'], GTAGS.MIN_U, DIR.V,
@@ -162,29 +198,27 @@ def define_model(self) :
     # MUST GENERATE THE MESH BEFORE YOU CAN APPLY THE BOUNDARY CONDITIONS
     self.generate_mesh()
 
-    #gla = ms['A'].get_grid_list_from_tags(GTAGS.MAX_U)
-    #gla = ms['A'].get_grid_list_from_tags(GTAGS.CENTER_W, gla)
-    
-    glb = blk_a.get_grid_list_from_tags(GTAGS.MIN_U)
-    glbw = blk_a.get_grid_list_from_tags(GTAGS.CENTER_W, glb)
-    glbv = blk_a.get_grid_list_from_tags(GTAGS.CENTER_V, glb)
+    glb = blk_x.get_grid_list_from_tags(GTAGS.MAX_W)
+    glbu = blk_x.get_grid_list_from_tags(GTAGS.CENTER_U, glb)
+    glbv = blk_x.get_grid_list_from_tags(GTAGS.CENTER_V, glb)
 
-    print 'NUMBER OF GRIDS TO BE CONSTRAINED =', len(glb)
+    print glb
 
-
-
+    # FIX FACE IN X DIRECTION
     for g in glb :
          g.bc.add(DOF.DX)
     pass
 
+    # SYMMETRY ABOUT X AXIS
+    for g in glbu :
+         g.bc.add(DOF.DX)
+    pass
 
-    for g in glbw :
+    # SYMMETRY ABOUT Y AXIS
+    for g in glbv :
          g.bc.add(DOF.DY)
     pass
 
-    for g in glbv :
-         g.bc.add(DOF.DZ)
-    pass
 
 
     

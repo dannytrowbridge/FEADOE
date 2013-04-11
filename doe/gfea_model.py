@@ -3964,6 +3964,7 @@ class model(object) :
         ## pass
 
         for j in self.joins :
+            if( j.type != JTAGS.HINGE ) : continue
             egl = []
             for g, gmass in j.slave.grid_associations.items() :
                 egl.append(gmass.extra_grid)
@@ -4001,8 +4002,111 @@ class model(object) :
         pass
 
 
+        for b in self.blocks :
+            m = b.mesh
+            fp.write('** <BEGIN> ' + '~-~' * 15 + ' ' + m.eset_name  +' ELEMENTS\n')
+            m.save_abq_elements(fp)
+            fp.write('** <END> ' + '~-~' * 15 + ' ' + m.eset_name  +' ELEMENTS\n')
+        pass
+
+
+        fp.write('*ELSET, ELSET=EALL\n')
+        ii = 0
+        ti = 0
+        for e in gel :
+            ii += 1
+            ti += 1
+            fp.write(str(e.id))
+            if( ii == 13) :
+                fp.write('\n')
+                ii = 0
+            else :
+                if( ti != len(gel) ) : 
+                    fp.write(', ')
+                pass
+            pass
+        pass
+        if( ii != 0 ) :
+            fp.write('\n')
+        pass
+
+        fp.write('*' * 80 + '\n')
+
+
+
+        for b in self.blocks :
+            m = b.mesh
+            #print 'MESH ', m.name, ' USES MATERIAL ', m.material.name
+            #print '   TLO=', m.temp_lo, '  THI=', m.temp_hi
+            lot = m.temp_lo * 0.95
+            hit = m.temp_hi * 1.05
+            if( abs(hit - lot) < 1.0 ) :
+                lot = lot - 1.0
+                hit = hit + 1.0
+            pass
+            dt = (hit - lot) / m.material.number_of_output_divisions
+            tel = m.el.values()
+            tel.sort(key=lambda ee : ee.id)
+            for e in tel :
+                vf = e.avg_grid.get_param('VOL_FRAC', 1.0)
+                
+                #print 'ELEMENT VOLUME FRACTION = ', vf
+                #print 'ELE AVG GRID PARAMS = ', e.avg_grid.params
+                
+                ml = []
+                for it in range(m.material.number_of_output_divisions + 1) :
+                    t = lot + float(it) * dt
+                    tmatprop = m.material.get_mat_props_at_temp_with_volume_fraction_scaling(t, vf)
+                    ml.append(tmatprop)
+                pass
+                mat_name = m.material.name + '_' + e.name
+                fp.write('*MATERIAL, NAME=' + mat_name + '\n')
+                fp.write('**  ELSET VOL FRAC = ' + str(vf) + '\n')
+                fp.write('*DENSITY' + '\n')
+                f = '{0}, {1}'
+                for mat in ml :
+                    fp.write(f.format(mat.props['DENSITY'], mat.temperature) + '\n')
+                pass
+                fp.write('*ELASTIC, TYPE=ENGINEERING CONSTANTS' + '\n')
+                
+                f1 = b2b_brace_re.sub(r'}, {',  ' {}' * 8).strip()
+                f2 = b2b_brace_re.sub(r'}, {',  ' {}' * 2).strip()
+                for mat in ml :
+                    s = f1.format(mat.props['YM11'],
+                                  mat.props['YM22'],
+                                  mat.props['YM33'],
+                                  mat.props['PR12'],
+                                  mat.props['PR13'],
+                                  mat.props['PR23'],
+                                  mat.props['SM12'],
+                                  mat.props['SM13'])
+                    fp.write(s + '\n')
+                    s = f2.format(mat.props['SM23'],
+                                  mat.temperature)
+                    fp.write(s + '\n')
+                pass
+                fp.write('*EXPANSION, TYPE=ORTHO, ZERO=' + str(self.reference_temp) + '\n')
+                f = b2b_brace_re.sub(r'}, {',  ' {}' * 4).strip()
+                for mat in ml :
+                    s = f.format(mat.props['TEC11'],
+                                 mat.props['TEC22'],
+                                 mat.props['TEC33'],
+                                 mat.temperature)
+                    fp.write( s + '\n' )
+                pass
+
+                s = '*SOLID SECTION, ELSET=' + e.single_element_set_name + ', MATERIAL=' + mat_name 
+                fp.write(s + '\n')
+            pass
+            fp.write('*' * 80 + '\n')
+        pass
+
+
+
+
 
         for j in self.joins :
+            if( j.type != JTAGS.HINGE ) : continue
             for jf in j.jfaces :
                 fp.write('** <BEGIN> ' + '~-~' * 15 + ' ' + jf.name  +' JOIN NODE SET\n')
                 fp.write('*NSET, NSET=' + jf.name + '\n')
@@ -4026,6 +4130,7 @@ class model(object) :
         f = '{0}, {1}, {2}, {3}, {4}, {5}'
 
         for j in self.joins :
+            if( j.type != JTAGS.HINGE ) : continue
             jf = j.slave
             fp.write('** <BEGIN> ' + '~-~' * 15 + ' ' + j.name  +' JOIN FACE COORDS\n')
             fp.write('*TRANSFORM, NSET=' + j.name + ', TYPE=R\n')
@@ -4038,6 +4143,7 @@ class model(object) :
         feq = '{}, {}, {}'
         fp.write('*' * 80 + '\n')
         for j in self.joins :
+            if( j.type != JTAGS.HINGE ) : continue
             jf = j.slave
             fp.write('** <BEGIN> ' + '~-~' * 5 + ' ' + jf.name  +' JOIN EQUATIONS\n')
             glass = j.slave.grid_associations.keys()
@@ -4209,107 +4315,9 @@ class model(object) :
 
             
             pass
-
-
-
-
-            
-        
-        for b in self.blocks :
-            m = b.mesh
-            fp.write('** <BEGIN> ' + '~-~' * 15 + ' ' + m.eset_name  +' ELEMENTS\n')
-            m.save_abq_elements(fp)
-            fp.write('** <END> ' + '~-~' * 15 + ' ' + m.eset_name  +' ELEMENTS\n')
         pass
 
-        fp.write('*ELSET, ELSET=EALL\n')
-        ii = 0
-        ti = 0
-        for e in gel :
-            ii += 1
-            ti += 1
-            fp.write(str(e.id))
-            if( ii == 13) :
-                fp.write('\n')
-                ii = 0
-            else :
-                if( ti != len(gel) ) : 
-                    fp.write(', ')
-                pass
-            pass
-        pass
-        if( ii != 0 ) :
-            fp.write('\n')
-        pass
 
-        fp.write('*' * 80 + '\n')
-
-        for b in self.blocks :
-            m = b.mesh
-            #print 'MESH ', m.name, ' USES MATERIAL ', m.material.name
-            #print '   TLO=', m.temp_lo, '  THI=', m.temp_hi
-            lot = m.temp_lo * 0.95
-            hit = m.temp_hi * 1.05
-            if( abs(hit - lot) < 1.0 ) :
-                lot = lot - 1.0
-                hit = hit + 1.0
-            pass
-            dt = (hit - lot) / m.material.number_of_output_divisions
-            tel = m.el.values()
-            tel.sort(key=lambda ee : ee.id)
-            for e in tel :
-                vf = e.avg_grid.get_param('VOL_FRAC', 1.0)
-                
-                #print 'ELEMENT VOLUME FRACTION = ', vf
-                #print 'ELE AVG GRID PARAMS = ', e.avg_grid.params
-                
-                ml = []
-                for it in range(m.material.number_of_output_divisions + 1) :
-                    t = lot + float(it) * dt
-                    tmatprop = m.material.get_mat_props_at_temp_with_volume_fraction_scaling(t, vf)
-                    ml.append(tmatprop)
-                pass
-                mat_name = m.material.name + '_' + e.name
-                fp.write('*MATERIAL, NAME=' + mat_name + '\n')
-                fp.write('**  ELSET VOL FRAC = ' + str(vf) + '\n')
-                fp.write('*DENSITY' + '\n')
-                f = '{0}, {1}'
-                for mat in ml :
-                    fp.write(f.format(mat.props['DENSITY'], mat.temperature) + '\n')
-                pass
-                fp.write('*ELASTIC, TYPE=ENGINEERING CONSTANTS' + '\n')
-                
-                f1 = b2b_brace_re.sub(r'}, {',  ' {}' * 8).strip()
-                f2 = b2b_brace_re.sub(r'}, {',  ' {}' * 2).strip()
-                for mat in ml :
-                    s = f1.format(mat.props['YM11'],
-                                  mat.props['YM22'],
-                                  mat.props['YM33'],
-                                  mat.props['PR12'],
-                                  mat.props['PR13'],
-                                  mat.props['PR23'],
-                                  mat.props['SM12'],
-                                  mat.props['SM13'])
-                    fp.write(s + '\n')
-                    s = f2.format(mat.props['SM23'],
-                                  mat.temperature)
-                    fp.write(s + '\n')
-                pass
-                fp.write('*EXPANSION, TYPE=ORTHO, ZERO=' + str(self.reference_temp) + '\n')
-                f = b2b_brace_re.sub(r'}, {',  ' {}' * 4).strip()
-                for mat in ml :
-                    s = f.format(mat.props['TEC11'],
-                                 mat.props['TEC22'],
-                                 mat.props['TEC33'],
-                                 mat.temperature)
-                    fp.write( s + '\n' )
-                pass
-
-                s = '*SOLID SECTION, ELSET=' + e.single_element_set_name + ', MATERIAL=' + mat_name 
-                fp.write(s + '\n')
-            pass
-            fp.write('*' * 80 + '\n')
-        pass
 
 
         fp.write('*INITIAL CONDITIONS, TYPE=TEMPERATURE' + '\n')
@@ -4483,6 +4491,26 @@ class model(object) :
                 psum = psum / 4.0
                 if( abs(psum) < constants.TOL ) : continue
 
+##  TBD - WE MIGHT WANT TO IMPLIMENT SOMETHING LIKE THE FOLLOWING...
+##                
+## #http://stackoverflow.com/questions/5124126/python-scipy-interpolation-map-coordinates#
+## import numpy
+## from scipy import interpolate
+## x = numpy.array([0.0, 0.60, 1.0])
+## y = numpy.array([0.0, 0.25, 0.80, 1.0])
+## z = numpy.array([ 
+##    [ 1.4 ,  6.5 ,  1.5 ,  1.8 ],
+##    [ 8.9 ,  7.3 ,  1.1 ,  1.09],
+##    [ 4.5 ,  9.2 ,  1.8 ,  1.2 ]])
+## # you have to set kx and ky small for this small example dataset
+## # 3 is more usual and is the default
+## # s=0 will ensure this interpolates.  s>0 will smooth the data
+## # you can also specify a bounding box outside the data limits
+## # if you want to extrapolate
+## sp = interpolate.RectBivariateSpline(x, y, z, kx=2, ky=2, s=0)
+
+## sp([0.60], [0.25])  # array([[ 7.3]])
+## sp([0.25], [0.60])  # array([[ 2.66427408]])
 
            
                 vl[0] = vector(fnn, fpn)

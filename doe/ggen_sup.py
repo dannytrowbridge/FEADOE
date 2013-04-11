@@ -589,6 +589,8 @@ class block(object) :
         # MIGHT WANT TO TWEEK THIS (WITHING ACCEPTABLE VALUES) TO ACCOMMODATE DISSIMILAR MESHES
         # 1/40 < TARGET_AR < 40  ???  
         self.target_ar = None
+        self.fne = np.zeros(3, dtype=np.int32)
+
 
     pass
 
@@ -613,6 +615,26 @@ class block(object) :
         
         return(s)
     pass
+
+    #----------------------------------------------------------------------------------------------------
+
+    def force_element_count(self, tne) :
+        if( isinstance(tne, list) ) :
+            i = -1
+            for n in tne :
+                i += 1
+                if( n is None ) : continue
+                if( n > 0 ) :
+                    self.fne[i] = n
+                pass
+            pass
+        else :
+            for i in range(3) :
+                self.fne[i] = tne
+            pass
+        pass
+    pass
+        
 
     #----------------------------------------------------------------------------------------------------
 
@@ -683,8 +705,39 @@ class block(object) :
 ##                     -W                            
 
     #----------------------------------------------------------------------------------------------------
-    # General block definiton
-    #    - Must use faces (not points) so we can change pressures independently on each face  
+    # General block definiton by points
+    #    - We use points here therefore we can NOT change pressures independently on each face  
+
+    def define_block_from_points(self, p1, p2, p3, p4, p5, p6, p7, p8) :
+        self.faces.clear()
+        
+        self.faces[FTAGS.MIN_W] = face('F1')
+        self.faces[FTAGS.MIN_W].define_face_from_points(p1, p2, p3, p4)
+
+        self.faces[FTAGS.MAX_W] = face('F2')
+        self.faces[FTAGS.MAX_W].define_face_from_points(p5, p8, p7, p6)
+
+        self.faces[FTAGS.MIN_V] = face('F3')
+        self.faces[FTAGS.MIN_V].define_face_from_points(p1, p5, p6, p2)
+        
+        self.faces[FTAGS.MAX_U] = face('F4')
+        self.faces[FTAGS.MAX_U].define_face_from_points(p2, p6, p7, p3)
+        
+        self.faces[FTAGS.MAX_V] = face('F5')
+        self.faces[FTAGS.MAX_V].define_face_from_points(p3, p7, p8, p4)
+        
+        self.faces[FTAGS.MIN_U] = face('F6')
+        self.faces[FTAGS.MIN_U].define_face_from_points(p4, p8, p5, p1)
+
+
+        self.defined_by_tag = BTAGS.POINTS
+        self.add_points_and_edges_from_faces()
+
+    pass
+
+    #----------------------------------------------------------------------------------------------------
+    # General block definiton by faces
+    #    - We use faces here (not points) so we CAN change pressures independently on each face  
 
     def define_block_from_faces(self, f1, f2, f3, f4, f5, f6) :
         self.faces.clear()
@@ -697,7 +750,7 @@ class block(object) :
         self.faces[FTAGS.MAX_V] = copy.deepcopy(f5)
         self.faces[FTAGS.MIN_U] = copy.deepcopy(f6)
 
-        self.defined_by_tag = BTAGS.DEFINED
+        self.defined_by_tag = BTAGS.FACES
         self.add_points_and_edges_from_faces()
 
     pass
@@ -709,17 +762,14 @@ class block(object) :
         ff = face(self.name + '_MIDSURF')
         ff.define_face_from_points(p1, p2, p3, p4)
         ff.tags |= FTAGS.MID_W
+        self.defined_by_tag = BTAGS.EXPLODED
         self.explode_block_from_middle_surface(ff)
     pass
 
     #----------------------------------------------------------------------------------------------------
 
     def explode_block_from_middle_surface(self, f) :
-        #if( len(self.faces) != 1 ) : return
-        #f = self.faces[0]
-        #self.pl = {}
-        #self.el = {} # THIS IS THE EDGE LIST IN THE BLOCK CLASS
-        self.defined_by_tag = BTAGS.EXPLODED 
+
         # CURRENT EDGE INDEX
         for cei in (3, 0, 1, 2) :
             nei = cei + 1
@@ -1250,11 +1300,24 @@ class block(object) :
         ## self.ne[1] = 4
         ## self.ne[2] = 2
 
-        ## if( self.name == 'B' ) :
-        ##     self.ne[0] = 3
-        ##     self.ne[1] = 2
-        ##     self.ne[2] = 3
+        ## if( self.name == 'A' ) :
+        ##     self.ne[0] = 4
+        ##     self.ne[1] = 4
+        ##     self.ne[2] = 4
         ## pass
+
+
+        # USER OVERIDE ELEMENT COUNT
+        print 'FNE =', self.fne
+        print 'NE =', self.ne
+        
+        for i in range(3) :
+            if( self.fne[i] > 0 ) :
+                self.ne[i] = self.fne[i]
+            pass
+        pass
+        print 'NE =', self.ne
+        
 
         kl = self.faces.keys()
         kl.sort()

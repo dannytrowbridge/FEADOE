@@ -30,15 +30,21 @@ sum = 0.0
 for i in range(8) :
     vals = np.zeros(8)
     vals[i] = 1.0
-    print vals
-    print pt[i]
+    print 'VALS =', vals
+    print 'pt #', i, ' = ', pt[i]
     #gvv = griddata(pt, vals, (3.5, 4.5), method='nearest')
     #gvv = griddata(pt, vals, (3.5, 4.5), method='linear')
     gvv = griddata(pt, vals, (3.5, 4.5), method='cubic')
-    print gvv
+    print 'GVV=', gvv
     sum = sum + gvv
     gv.append(gvv)
 pass
 
-print gv
+print 'GV=', gv
 print 'sum =', sum 
+
+
+v = [ 1, 2, 3 ]
+
+print type(v)
+print isinstance(v, list)

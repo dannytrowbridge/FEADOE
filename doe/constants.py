@@ -68,7 +68,8 @@ DOF = namedtuple('DOF',
 
 
 block_tags = [
-    'DEFINED',
+    'POINTS',
+    'FACES',
     'EXPLODED'
     ]
 
