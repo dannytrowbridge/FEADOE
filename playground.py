@@ -202,21 +202,27 @@ def define_model(self) :
     glbu = blk_x.get_grid_list_from_tags(GTAGS.CENTER_U, glb)
     glbv = blk_x.get_grid_list_from_tags(GTAGS.CENTER_V, glb)
 
-    print glb
+    
 
-    # FIX FACE IN X DIRECTION
+    # FIX FACE IN W DIRECTION
+    print 'FACE POINTS...'
     for g in glb :
-         g.bc.add(DOF.DX)
+        print g.id
+        g.bc.add(DOF.DZ)
     pass
 
     # SYMMETRY ABOUT X AXIS
+    print 'X SYM POINTS...'
     for g in glbu :
-         g.bc.add(DOF.DX)
+        print g.id
+        g.bc.add(DOF.DX)
     pass
 
     # SYMMETRY ABOUT Y AXIS
+    print 'Y SYM POINTS...'
     for g in glbv :
-         g.bc.add(DOF.DY)
+        print g.id
+        g.bc.add(DOF.DY)
     pass
 
 
