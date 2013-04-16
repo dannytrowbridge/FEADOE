@@ -147,7 +147,7 @@ class analysis(object) :
         self.solver_grid_map_name = self.solver_root_name + '.XML'
         self.pickle_file = self.solver_root_name + 'pickle'
         #self.model.save_abq_QUAD(self.solver_in_name)
-        self.model.save_abq_HEX(self.solver_in_name)
+        self.model.save_abq(self.solver_in_name)
         self.solver_command = self.solver_name + ' ' + self.solver_root_name
         echo_and_execute_cmd(self.solver_command) # THIS WAITS
     pass
@@ -159,7 +159,7 @@ class analysis(object) :
         #self.model.read_stress_results_from_dot_frd_QUAD(self.solver_out_frd_name,
         #                                            self.solver_grid_map_name,
         #                                            model_3d_name)
-        self.model.read_stress_results_from_dot_frd_HEX(self.solver_out_frd_name)
+        self.model.read_stress_results_from_dot_frd(self.solver_out_frd_name)
 
 
 

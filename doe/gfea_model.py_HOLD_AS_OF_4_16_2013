@@ -3,12 +3,28 @@ import os
 import re
 import math
 import string
+#import types
 import cPickle as pickle
+#import shelve
+#import errno
+#import shutil
+#import glob
 import time
+#import textwrap
+#import random
 import copy
 from datetime import date
+#from subprocess import *
+#import csv
+#import win32com.client
+#import pythoncom
 from xml.dom import minidom
 import numpy as np
+#import matplotlib
+#matplotlib.use('Agg')
+#import scipy as sp
+#from pylab import *
+#import collections
 from xml.dom import minidom
 
 from mpl_toolkits.mplot3d import axes3d
@@ -47,6 +63,87 @@ def write_list_csv(fp, nn, per_line) :
         pass
     pass
 pass
+
+##########################################################################################################
+
+## # THIS ASSUMES THE THREE POINTS ARE NEARLY LINEAR
+## # RETURNS THE DECIMAL PRECENT OF EACH HALF OF THE DIVIDE S->M->E VECTOR SERIES
+## # OMITTED: PLUS THE UNIT VECTORS |S->E|, |M->S|, and |M->E|
+## def distance_factors(sv, mv, ev) :
+##     dse = ev - sv
+##     dsm = mv - sv
+##     dem = mv - ev
+##     ldse = np.linalg.norm(dse)
+##     ldsm = np.linalg.norm(dsm)
+##     ldem = np.linalg.norm(dem)
+
+##     udse = 0.0
+##     if( ldse != 0.0 ) : udse = dse / ldse
+
+##     udsm = 0.0
+##     if( ldsm != 0.0 ) :  udsm = dsm / ldsm
+
+##     udem = 0.0
+##     if( ldem != 0.0 ) :  udem = dem / ldem
+    
+##     tl = ldsm + ldem
+##     fs = 1.0 - ldsm / tl
+##     fe = 1.0 - ldem / tl
+##     #return( fs, fe, udse, udsm, udem)
+##     return( fs, fe )
+## pass
+
+##########################################################################################################
+
+## def project_new_point_and_calc_distance_factors(sv, mv, ev) :
+##     #print sv, '-=>', ev
+##     dse = ev - sv
+##     dsm = mv - sv
+##     dem = mv - ev
+##     ldse = np.linalg.norm(dse)
+##     ldsm = np.linalg.norm(dsm)
+##     ldem = np.linalg.norm(dem)
+
+##     udse = 0.0
+##     if( ldse != 0.0 ) : udse = dse / ldse
+
+##     udsm = 0.0
+##     if( ldsm != 0.0 ) :  udsm = dsm / ldsm
+
+##     udem = 0.0
+##     if( ldem != 0.0 ) :  udem = dem / ldem
+
+##     dsm_on_dse = dsm.dot(udse) * udse
+##     fs = 1.0 - np.linalg.norm(dsm_on_dse) / ldse
+##     fe = 1.0 - fs
+##     npp = sv + dsm_on_dse
+##     return( fs, fe, npp)
+## pass
+
+##########################################################################################################
+
+## def get_grid_list_from_tags_gen(self, tag, igl = None) :
+##     rgl = []
+##     if( igl is not None ) :
+##         rgl = igl
+##         rgl = filter( ( lambda gg: gg is not None ), rgl)
+##         rgl = filter( ( lambda gg: gg.tags & tag ), rgl )
+##     pass
+##     return(rgl)
+## pass
+
+
+##########################################################################################################
+
+## def get_grid_list_from_not_tags_gen(self, tag, igl = None) :
+##     rgl = []
+##     if( igl is not None ) :
+##         rgl = igl
+#         rgl = filter( ( lambda gg: gg is not None ), rgl)
+##         rgl = filter( ( lambda gg: not ( gg.tags & tag ) ), rgl )
+##     pass
+##     return(rgl)
+## pass
 
 ##########################################################################################################
 
@@ -222,7 +319,7 @@ class grid(point) :
         self.bc = set()
         self.norm_uvw = [0.0, 0.0, 0.0]
         self.uvw = [0, 0, 0]
-        
+        #self.tags = 0    # NOW IN BASE CLASS
         self.mesh = None
         self.el = set()
         self.results = {}
@@ -360,6 +457,19 @@ class grid(point) :
         fp.write(s + '\n')
     pass
         
+    ## #----------------------------------------------------------------------------------------------------
+    ## # THIS SHOULD REALLY ONLY RETURN A LIST OF ONE GRID - SEE model.stitch()
+    ## #   - MAY RETURN A REFERENCE TO ITSELF - NEEDS REWORKED !!!!
+    ## def get_active_partner_grids(self) :
+    ##     pgrids = [ self ] + list(self.partner_grids)
+        
+    ##     # agl = filter( ( lambda g : ( g.tags & GTAGS.BUTT )
+    ##     #                and ( not ( g.tags & GTAGS.REMOVED ) ) ), pgrids )
+        
+    ##     agl = filter( ( lambda g : ( not ( g.tags & GTAGS.REMOVED ) ) ), pgrids )
+    ##     return(agl)
+    ## pass
+
     #----------------------------------------------------------------------------------------------------
 
 
@@ -524,16 +634,37 @@ class mesh(object) :
         self.eset_name = 'E'+self.name
         self.nset_name = 'N'+self.name
         
+        self.lul = None
+        self.lvl = None
+        self.luh = None
+        self.lvh = None
+
         self.model = None
         self.block = None
+        #self.vol = None
         
+        self.neu = 0
+        self.nev = 0
+        self.new = 0
+        #self.eid_offset = 0
+        #self.eid_max = -1
+        #self.eid_min = -1
+        self.ngu = 0
+        self.ngv = 0
+        self.ngw = 0
+        #self.gid_offset = 0
+        #self.gid_max = -1
+        #self.gid_min = -1
+        #self.gi_cl_u = 0
+        #self.gi_cl_v = 0
+        #self.el = []
+        #self.gl = []
         self.el = {}
         self.gl = {}
-
+        #self.parms = {}
+        #self.tag = 0
         self.u_elsets = []
         self.v_elsets = []
-        self.w_elsets = []
-        
         self.material = None
         self.temp_lo = None
         self.temp_hi = None
@@ -547,6 +678,7 @@ class mesh(object) :
         del self.u_elsets
         del self.v_elsets
         del self.material
+        #del self.parms
     pass
 
     #----------------------------------------------------------------------------------------------------
@@ -768,6 +900,122 @@ class mesh(object) :
         pass # U LOOP
 
 
+        # TBD TBD TBD - LETS HANDLE THIS AT OUTPUT TIME
+        
+        # DEFINE PER-FACE PARAMETERS (NOT VOLUME PARAMETERS)
+        #  RIGHT NOW IT IS ONLY PRESSURE - 'PRES'
+        #  SOMEHOW I NEED EXPOSE THIS SO THE USER CAN ADD MORE PER-FACE PARAMETERS
+
+        ## face_params = [ 'PRES' ]
+        
+        ## f = b.faces[FTAGS.MIN_U]
+
+        ## ptnn = f.edges[0].sp
+        ## ptpn = f.edges[1].sp
+        ## ptpp = f.edges[2].sp
+        ## ptnp = f.edges[3].sp
+
+        ## v01 = f.edges[0]
+        ## v32 = f.edges[2].vector_from_flip()
+
+        
+        ## fgl = self.get_grid_list_from_tags(GTAGS.MIN_U)
+        ## # VW
+        ## for fg in fgl :
+            
+
+
+
+        
+        
+
+
+
+        # MOVED THIS TO THE SECTION ABOVE
+        ## print 'GOING TO ASSIGN GRID TAGS'
+
+        ## # GRID TAGS
+        ## for iu in range(b.ng[DIR.U]) :
+            
+        ##     for iv in range(b.ng[DIR.V]) :
+            
+        ##         for iw in range(b.ng[DIR.W]) :
+
+        ##             gtags = 0
+
+        ##             if( iu == 0 ) : gtags |= GTAGS.MIN_U
+        ##             if( iu == (b.ng[DIR.U]-1) ) : gtags |= GTAGS.MAX_U
+        ##             if( iu in center_line_indices[DIR.U] ) : gtags |= GTAGS.CENTER_U
+
+        ##             if( iv == 0 ) : gtags |= GTAGS.MIN_V
+        ##             if( iv == (b.ng[DIR.V]-1) ) : gtags |= GTAGS.MAX_V
+        ##             if( iv in center_line_indices[DIR.V] ) : gtags |= GTAGS.CENTER_V
+
+        ##             if( iw == 0 ) : gtags |= GTAGS.MIN_W
+        ##             if( iw == (b.ng[DIR.W]-1) ) : gtags |= GTAGS.MAX_W
+        ##             if( iw in center_line_indices[DIR.W] ) : gtags |= GTAGS.CENTER_W
+
+        ##             # TAG MID GRIDS
+        ##             if( ( iu % 2 == 0 ) and ( iv % 2 == 0 ) and ( iw % 2 == 0 ) ) :
+        ##                 gtags |= GTAGS.ELEMENT_CORNER
+        ##             pass
+        ##             if( ( iu % 2 == 1 ) and ( iv % 2 == 1 ) and ( iw % 2 == 1 ) ) :
+        ##                 gtags |= GTAGS.ELEMENT_MID_VOL
+        ##                 gtags |= GTAGS.ANCILLARY
+        ##                 #gtags |= GTAGS.PENDING_DELETE
+        ##             pass
+                        
+        ##             if( ( iu % 2 == 0 ) and ( iv % 2 == 0 ) and ( iw % 2 == 1 ) ) :
+        ##                 gtags |= GTAGS.ELEMENT_MID_EDGE
+        ##                 gtags |= GTAGS.ELEMENT_MID_EDGE_W
+        ##             pass
+        ##             if( ( iu % 2 == 0 ) and ( iv % 2 == 1 ) and ( iw % 2 == 1 ) ) :
+        ##                 gtags |= GTAGS.ELEMENT_MID_FACE
+        ##                 gtags |= GTAGS.ELEMENT_MID_FACE_VW
+        ##                 gtags |= GTAGS.PENDING_DELETE
+        ##             pass
+                        
+        ##             if( ( iu % 2 == 0 ) and ( iv % 2 == 1 ) and ( iw % 2 == 0 ) ) :
+        ##                 gtags |= GTAGS.ELEMENT_MID_EDGE
+        ##                 gtags |= GTAGS.ELEMENT_MID_EDGE_V
+        ##             pass
+        ##             if( ( iu % 2 == 1 ) and ( iv % 2 == 1 ) and ( iw % 2 == 0 ) ) :
+        ##                 gtags |= GTAGS.ELEMENT_MID_FACE
+        ##                 gtags |= GTAGS.ELEMENT_MID_FACE_UV
+        ##                 gtags |= GTAGS.PENDING_DELETE
+        ##             pass
+                        
+        ##             if( ( iu % 2 == 1 ) and ( iv % 2 == 0 ) and ( iw % 2 == 0 ) ):
+        ##                 gtags |= GTAGS.ELEMENT_MID_EDGE
+        ##                 gtags |= GTAGS.ELEMENT_MID_EDGE_U
+        ##             pass
+        ##             if( ( iu % 2 == 1 ) and ( iv % 2 == 0 ) and ( iw % 2 == 1 ) ) :
+        ##                 gtags |= GTAGS.ELEMENT_MID_FACE
+        ##                 gtags |= GTAGS.ELEMENT_MID_FACE_UW
+        ##                 gtags |= GTAGS.PENDING_DELETE
+        ##             pass
+
+
+                    
+        ##             self.gl[iu, iv, iw].tags = gtags
+        ##             #print self.gl[iu, iv, iw]
+                    
+        ##         pass # W LOOP
+        ##     pass # V LOOP
+        ## pass # U LOOP
+
+        # TBD: PROBABLY SHOULD WORK OUT NOT ALLOCATING THESE GRIDS
+    
+        #self.print_grids()
+        #print 'DELETE UN-NEEDED GRIDS'
+        ## dgl = self.get_grid_list_from_tags(GTAGS.PENDING_DELETE)
+        ## for g in dgl :
+        ##     del self.gl[g.uvw[DIR.U], g.uvw[DIR.V], g.uvw[DIR.W]]
+        ##     self.gl[g.uvw[DIR.U], g.uvw[DIR.V], g.uvw[DIR.W]] = None
+        ## pass
+        ## del dgl
+        #self.print_grids()
+        
         #print 'GOING TO DEFINE SOME ELSETS FOR EACH INCREMENT IN EACH DIR'
 
         self.u_elsets = []
@@ -955,6 +1203,16 @@ class mesh(object) :
 
     #----------------------------------------------------------------------------------------------------
 
+    def calc_grid_to_element_back_pointers(self) :
+        for e in self.el.values() :
+            for g in e.gl :
+                g.el.add(e)
+            pass
+        pass
+    pass
+
+    #----------------------------------------------------------------------------------------------------
+
     def get_grid_from_indices(self, iu, iv, iw = 0, igl = None) :
         #print 'LOOKING FOR GRID AT INDEX =', iu, iv, iw
 
@@ -1107,6 +1365,15 @@ class mesh(object) :
         tgl.sort(key=lambda gg : gg.id)
         for gg in tgl :
             if( gg.id <= 0 ) : continue
+            #tgl = gg.get_active_grids()
+            #if( len(tgl) > 0 ) :
+            #    print ' '
+            #    print gg
+            #    print 'NACTIVE = ', len(tgl)
+            #    print 'GRID ' + str(gg.id) + ' ACTIVE->', tgl
+            #    print 'NPARTNERS = ', len(gg.partner_grids)
+            #    print 'partner_grids = ', gg.partner_grids
+            #pass
             gg.save_abq(fp)
         pass
     pass
@@ -1120,15 +1387,228 @@ class mesh(object) :
         tel.sort(key=lambda ee : ee.id)
         
         for ee in tel :
+            #els = elset( ee.single_element_set_name, ee.id, self)
+            #els.append(ee)
+            #elsets_list.append( els )
+            #fp.write('*ELEMENT, TYPE=S8R, ELSET=' + ee.single_element_set_name + '\n')
             fp.write('*ELEMENT, TYPE=C3D20R, ELSET=' + ee.single_element_set_name + '\n')
+            #fp.write('*ELEMENT, TYPE=S8, ELSET=' + ee.single_element_set_name + '\n')
             ee.save_abq(fp)
         pass
+        #return(elsets_list)
     pass
 
     #----------------------------------------------------------------------------------------------------
 
 pass
 
+## ##########################################################################################################
+## # gmass
+## class grid_mesh_association(object) :
+
+##     #----------------------------------------------------------------------------------------------------
+
+##     def __init__(self, slave_grid, parent_face) :
+##         self.slave_grid = slave_grid
+##         self.face = parent_face
+##         self.partner_grids = []
+##         # THIS IS NOW A DICTIONARY WHOSE INDEX IS THE CORRESPONDING MASTER GRID OBJECT
+##         self.partner_factors = {}
+##         self.extra_grid = None
+##     pass
+
+##     #----------------------------------------------------------------------------------------------------
+##     # DEFAULT THE FACTOR TO 1.0 IN CASE THIS IS THE ONLY PARTNER GRID
+##     #  IN THE CASE OF MULTIPLE PARTNERS THE DEFAULT FACTOR WILL BE OVERWRITTEN
+##     def add_partner(self, pg, factor = 1.0) :
+##         self.partner_grids.append(pg)
+##         self.assign_partner_factor(pg, factor)
+##     pass
+
+##     #----------------------------------------------------------------------------------------------------
+
+##     def assign_partner_factor(self, pg, factor = 0.0) :
+##         self.partner_factors[pg] = factor
+##     pass
+
+##     #----------------------------------------------------------------------------------------------------
+
+##     ## def interp_coef_2d_field_from_corner_points_CORNERS_ONLY(self) :
+        
+##     ##     f01, f10, np01 = project_new_point_and_calc_distance_factors(self.partner_grids[0].v,
+##     ##                                                                  self.slave_grid.v,
+##     ##                                                                  self.partner_grids[1].v)
+        
+##     ##     f32, f23, np32 = project_new_point_and_calc_distance_factors(self.partner_grids[3].v,
+##     ##                                                                  self.slave_grid.v,
+##     ##                                                                  self.partner_grids[2].v)
+
+##     ##     fm01, fm32 = distance_factors(np01, self.slave_grid.v, np32)
+
+##     ##     #print 'f01 = ', f01, '   f10 =', f10, '   NP01 =', np01
+##     ##     #print 'f32 = ', f32, '   f23 =', f23, '   NP32 =', np32
+##     ##     #print 'fm01 = ', fm01, '   fm32 = ', fm32
+    
+##     ##     f31, f13, np31 = project_new_point_and_calc_distance_factors(self.partner_grids[3].v,
+##     ##                                                                  self.slave_grid.v,
+##     ##                                                                  self.partner_grids[1].v)
+        
+##     ##     f02, f20, np02 = project_new_point_and_calc_distance_factors(self.partner_grids[0].v,
+##     ##                                                                  self.slave_grid.v,
+##     ##                                                                  self.partner_grids[2].v)
+
+##     ##     fm31, fm02 = distance_factors(np31, self.slave_grid.v, np02)
+
+##     ##     #print 'f31 = ', f31, '   f13 =', f13, '   NP31 =', np31
+##     ##     #print 'f02 = ', f02, '   f20 =', f20, '   NP02 =', np02
+##     ##     #print 'fm02 = ', fm02, '   fm31 = ', fm31
+
+
+##     ##     self.partner_factors[self.partner_grids[0]] = ( fm01 * f01 + fm02 * f02 ) / 2.0
+##     ##     self.partner_factors[self.partner_grids[1]] = ( fm01 * f10 + fm31 * f13 ) / 2.0
+##     ##     self.partner_factors[self.partner_grids[2]] = ( fm32 * f23 + fm02 * f20 ) / 2.0
+##     ##     self.partner_factors[self.partner_grids[3]] = ( fm32 * f32 + fm31 * f31 ) / 2.0
+
+##     ## pass
+
+##     #----------------------------------------------------------------------------------------------------
+##     # TRY INCLUDING THE MIDSIDE NODES
+##     def interp_coef_2d_field_from_corner_points(self) :
+##         mef = np.zeros(8)
+##         mefc = np.zeros(8)
+        
+##         f01, f10, np01 = project_new_point_and_calc_distance_factors(self.partner_grids[0].v,
+##                                                                      self.slave_grid.v,
+##                                                                      self.partner_grids[1].v)
+        
+##         f32, f23, np32 = project_new_point_and_calc_distance_factors(self.partner_grids[3].v,
+##                                                                      self.slave_grid.v,
+##                                                                      self.partner_grids[2].v)
+
+##         fm01, fm32 = distance_factors(np01, self.slave_grid.v, np32)
+
+
+##         mef[0] += ( fm01 * f01 ) ; mefc[0] += 1.0
+##         mef[1] += ( fm01 * f10 ) ; mefc[1] += 1.0
+##         mef[2] += ( fm32 * f23 ) ; mefc[2] += 1.0
+##         mef[3] += ( fm32 * f32 ) ; mefc[3] += 1.0
+        
+##         #print 'f01 = ', f01, '   f10 =', f10, '   NP01 =', np01
+##         #print 'f32 = ', f32, '   f23 =', f23, '   NP32 =', np32
+##         #print 'fm01 = ', fm01, '   fm32 = ', fm32
+    
+
+
+
+##         f31, f13, np31 = project_new_point_and_calc_distance_factors(self.partner_grids[3].v,
+##                                                                      self.slave_grid.v,
+##                                                                      self.partner_grids[1].v)
+        
+##         f02, f20, np02 = project_new_point_and_calc_distance_factors(self.partner_grids[0].v,
+##                                                                      self.slave_grid.v,
+##                                                                      self.partner_grids[2].v)
+
+##         fm31, fm02 = distance_factors(np31, self.slave_grid.v, np02)
+
+
+##         mef[0] += ( fm02 * f02 ) ; mefc[0] += 1.0
+##         mef[1] += ( fm31 * f13 ) ; mefc[1] += 1.0
+##         mef[2] += ( fm02 * f20 ) ; mefc[2] += 1.0
+##         mef[3] += ( fm31 * f31 ) ; mefc[3] += 1.0
+        
+##         #print 'f31 = ', f31, '   f13 =', f13, '   NP31 =', np31
+##         #print 'f02 = ', f02, '   f20 =', f20, '   NP02 =', np02
+##         #print 'fm02 = ', fm02, '   fm31 = ', fm31
+
+
+##         if( f01 <= f10 )  : # PROJECTED EDGE POINT IS BETWEEN X0 AND X4 (MID SIDE NODE: X0->X4->X1 )
+##             f04, f40 = distance_factors(self.partner_grids[0].v, np01, self.partner_grids[4].v)
+##             mef[0] += ( fm01 * f04 ) ; mefc[0] += 1.0
+##             mef[4] += ( fm01 * f40 ) ; mefc[4] += 1.0
+##         else :
+##             f14, f41 = distance_factors(self.partner_grids[1].v, np01, self.partner_grids[4].v)
+##             mef[1] += ( fm01 * f14 ) ; mefc[1] += 1.0
+##             mef[4] += ( fm01 * f41 ) ; mefc[4] += 1.0
+##         pass
+
+##         #mef[4] = (mef[0] + mef[1] ) / 2.0 
+
+##         if( f02 <= f20 )  : # PROJECTED EDGE POINT IS BETWEEN X0 AND X5 (MID SIDE NODE: X0->X5->X2 )
+##             f05, f50 = distance_factors(self.partner_grids[0].v, np02, self.partner_grids[5].v)
+##             mef[0] += ( fm02 * f05 ) ; mefc[0] += 1.0
+##             mef[5] += ( fm02 * f50 ) ; mefc[5] += 1.0
+##         else :
+##             f25, f52 = distance_factors(self.partner_grids[2].v, np02, self.partner_grids[5].v)
+##             mef[2] += ( fm02 * f25 ) ; mefc[2] += 1.0
+##             mef[5] += ( fm02 * f52 ) ; mefc[5] += 1.0
+##         pass
+
+##         #mef[5] = (mef[0] + mef[2] ) / 2.0 
+
+
+
+##         if( f32 <= f23 )  : # PROJECTED EDGE POINT IS BETWEEN X3 AND X6 (MID SIDE NODE: X3->X6->X2 )
+##             f36, f63 = distance_factors(self.partner_grids[3].v, np32, self.partner_grids[6].v)
+##             mef[3] += ( fm32 * f36 ) ; mefc[3] += 1.0
+##             mef[6] += ( fm32 * f63 ) ; mefc[6] += 1.0
+##         else :
+##             f26, f62 = distance_factors(self.partner_grids[2].v, np32, self.partner_grids[6].v)
+##             mef[2] += ( fm32 * f26 ) ; mefc[2] += 1.0
+##             mef[6] += ( fm32 * f62 ) ; mefc[6] += 1.0
+##         pass
+
+##         #mef[6] = (mef[3] + mef[2] ) / 2.0 
+
+
+##         if( f31 <= f13 )  : # PROJECTED EDGE POINT IS BETWEEN X3 AND X7 (MID SIDE NODE: X3->X7->X1 )
+##             f37, f73 = distance_factors(self.partner_grids[3].v, np31, self.partner_grids[7].v)
+##             mef[3] += ( fm31 * f37 ) ; mefc[3] += 1.0
+##             mef[7] += ( fm31 * f73 ) ; mefc[7] += 1.0
+##         else :
+##             f17, f71 = distance_factors(self.partner_grids[1].v, np31, self.partner_grids[7].v)
+##             mef[1] += ( fm31 * f17 ) ; mefc[1] += 1.0
+##             mef[7] += ( fm31 * f71 ) ; mefc[7] += 1.0
+##         pass
+
+##         #mef[7] = (mef[3] + mef[1] ) / 2.0 
+
+
+##         # AVERAGE
+##         for i in range(8) :
+##             mef[i] = mef[i] / mefc[i]
+##         pass
+
+
+            
+##         # NORMAL ALL THE FACTORS
+##         sum = 0.0
+##         for i in range(8) :
+##             sum += mef[i]
+##         pass
+
+##         for i in range(8) :
+##             mef[i] = mef[i] / sum
+##             self.partner_factors[self.partner_grids[i]] = mef[i]
+##         pass
+
+
+
+
+
+
+
+##         ## self.partner_factors[self.partner_grids[0]] = ( fm01 * f01 + fm02 * f02 ) / 2.0
+##         ## self.partner_factors[self.partner_grids[1]] = ( fm01 * f10 + fm31 * f13 ) / 2.0
+##         ## self.partner_factors[self.partner_grids[2]] = ( fm32 * f23 + fm02 * f20 ) / 2.0
+##         ## self.partner_factors[self.partner_grids[3]] = ( fm32 * f32 + fm31 * f31 ) / 2.0
+
+##     pass
+
+
+
+##     #----------------------------------------------------------------------------------------------------
+
+## pass
 
 ##########################################################################################################
 
@@ -1142,6 +1622,9 @@ class join_face(object) :
         self.block = ref_block
         self.face_grid_tag = ref_block_tag
         self.hinge_dir = None
+        # THIS IS NOW A DICTIONARY WHOSE INDEX IS THE CORRESPONDING SLAVE GRID OBJECT
+        #self.grid_associations = {}
+
 
         self.face_el = set()
 
@@ -1152,6 +1635,9 @@ class join_face(object) :
         
         # GRID LIST OF GRIDS ON JOIN FACE - FOUND NO MATTER WHAT KIND OF JOIN IT IS
         self.face_gl = []
+
+        self.edge_vector = np.zeros(3)
+        self.ortho_vector = np.zeros(3)
 
         self.face_dirs = [-1, -1]
 
@@ -1176,10 +1662,22 @@ class join_face(object) :
             or (  self.face_grid_tag == GTAGS.MIN_W ) ) :
              self.face_dirs = [ DIR.U, DIR.V ]
         pass
+        ## if( ( self.face_grid_tag == FTAGS.MAX_U )
+        ##     or ( self.face_grid_tag == FTAGS.MIN_U ) ) :
+        ##     self.face_dirs = [ None, DIR.V, DIR.W ]
+        ## pass
+        ## if( (  self.face_grid_tag == FTAGS.MAX_V )
+        ##     or (  self.face_grid_tag == FTAGS.MIN_V ) ) :
+        ##      self.face_dirs = [ DIR.U, None, DIR.W ]
+        ## pass
+        ## if( (  self.face_grid_tag == FTAGS.MAX_W )
+        ##     or (  self.face_grid_tag == FTAGS.MIN_W ) ) :
+        ##      self.face_dirs = [ DIR.U, DIR.V, None ]
+        ## pass
     pass
 
     #----------------------------------------------------------------------------------------------------
-    # WE REALLY DON'T NEED THIS
+
     def get_face_lines(self) :
         if( self.face_dirs[1] == DIR.U ) :
             main_grid_line_tag = GTAGS.MIN_U
@@ -1213,6 +1711,7 @@ class join_face(object) :
     def __del__ (self) :
         del self.gl
         del self.face_gl
+        #del self.grid_associations
     pass
 
     #----------------------------------------------------------------------------------------------------
@@ -1231,16 +1730,30 @@ class join(object) :
         self.jface_a = join_face(ba, ba_tag, self)
         self.jface_b = join_face(bb, bb_tag, self)
         self.jfaces = [ self.jface_a, self.jface_b ]
+        #self.block_a = ba
+        #self.block_a_tag = ba_tag
+        #self.block_b = bb
+        #self.block_b_tag = bb_tag
         self.type = jtype
 
         self.slave_tag = ''
 
         self.model = parent_model
 
+        #self.jface_a.hinge_dir = None
+        #self.jface_b.hinge_dir = None
+        
+        #self.a_gl = [] # GRID LIST OF "A" BLOCK GRIDS ON HINGE LINE - FOUND NO MATTER WHAT KIND OF JOIN IT IS
+        #self.b_gl = [] # GRID LIST OF "B" BLOCK GRIDS ON HINGE LINE - FOUND NO MATTER WHAT KIND OF JOIN IT IS
+        #self.jface_a.face_gl = [] # GRID LIST OF "A" BLOCK GRIDS ON JOIN FACE - FOUND NO MATTER WHAT KIND OF JOIN IT IS
+        #self.jface_b.face_gl = [] # GRID LIST OF "B" BLOCK GRIDS ON JOIN FACE - FOUND NO MATTER WHAT KIND OF JOIN IT IS
+
         # THESE ARE SET EQUAL TO a_gl OR b_gl DEPENDING ON THIER LENGTH (slave_gl IS THE LONGER)
         self.slave = None 
         self.master = None
         
+        #self.extra_gl = {} # THIS IS NOW A DICTIONARY WHOSE INDEX IS THE CORRESPONDING SLAVE GRID OBJECT
+
         self.edge_vector = np.zeros(3)
         
     pass
@@ -1250,6 +1763,9 @@ class join(object) :
     def __del__ (self) :
         del self.jface_a
         del self.jface_b
+        #del self.jface_a.face_gl
+        #del self.jface_b.face_gl
+        #del self.extra_gl
     pass
 
     #----------------------------------------------------------------------------------------------------
@@ -1379,7 +1895,25 @@ class join(object) :
     pass
 
     #----------------------------------------------------------------------------------------------------
-    # ASSOCIATE FACES BASED ON JOIN TYPE
+
+    @staticmethod
+    def distance_factors(sv, mv, ev) :
+        dms = mv - sv
+        dme = mv - ev
+        ldms = np.linalg.norm(dms)
+        ldme = np.linalg.norm(dme)
+        udms = dms / ldms
+        udme = dme / ldme
+        tl = ldms + ldme
+        fs = ldms / tl
+        fe = ldme / tl
+        return( fs, fe, udms, udme)
+    pass
+
+
+
+    #----------------------------------------------------------------------------------------------------
+    # ASSOCIATES THE GRIDS ON THE MORE DENSE HINGE LINE (SLAVE) WITH THE ONES ON THE LESS DENSE HINGE LINE (MASTER)
     def sew(self) :
         print '>>> TOP >>> ', here()
 
@@ -1395,35 +1929,35 @@ class join(object) :
         self.jface_a.face_gl = ma.get_grid_list_from_tags(self.jface_a.face_grid_tag)
         self.jface_b.face_gl = mb.get_grid_list_from_tags(self.jface_b.face_grid_tag)
         
-        print '_'*80
-        print 'A FACE GRIDS:', self.jface_a.face_grid_tag, self.jface_a.name
-        c = -1
-        for ag in self.jface_a.face_gl :
-          c += 1
-          print c, ag
-        pass
+        #print '_'*80
+        #print 'A FACE GRIDS:', self.jface_a.face_grid_tag, self.jface_a.name
+        #c = -1
+        #for ag in self.jface_a.face_gl :
+        #   c += 1
+        #   print c, ag
+        #pass
     
-        print
+        #print
         
-        print 'B FACE GRIDS:', self.jface_b.face_grid_tag, self.jface_b.name
-        c = -1
-        for bg in self.jface_b.face_gl :
-          c += 1
-          print c, bg
-        pass
+        #print 'B FACE GRIDS:', self.jface_b.face_grid_tag, self.jface_b.name
+        #c = -1
+        #for bg in self.jface_b.face_gl :
+        #   c += 1
+        #   print c, bg
+        #pass
 
-        print '_'*80
+        #print '_'*80
 
 
 
-        ## FROM CALCULIX MANUAL...
-        ##
-        ##  The dependent surface is called the slave surface, the indepen-
-        ## dent surface is the master surface. The user can freely decide which surface he
-        ## takes as slave and which as master.
-        ##
-        ## Testing and the internet indicate that it is better if the slave surface is the denser of the two meshes
-        ##
+## FROM CALCULIX MANUAL...
+##
+##  The dependent surface is called the slave surface, the indepen-
+## dent surface is the master surface. The user can freely decide which surface he
+## takes as slave and which as master.
+##
+## Testing and the internet indicate that it is better if the slave surface is the denser of the two meshes
+##
 
 
         
@@ -1482,6 +2016,96 @@ class join(object) :
             ## print 'NUMBER OF HINGE GRIDS IN MESH A =', len(self.jface_a.gl)
             ## print 'NUMBER OF HINGE GRIDS IN MESH B =', len(self.jface_b.gl)
 
+            ## a_min_grid_tag = join.get_min_grid_tag(self.jface_a.hinge_dir)
+            ## b_min_grid_tag = join.get_min_grid_tag(self.jface_b.hinge_dir)
+
+            
+            ## a_start_grid_list = ma.get_grid_list_from_tags(a_min_grid_tag, self.jface_a.gl)
+            ## if( len(a_start_grid_list) != 1 ) :
+            ##     print 'ERROR:  COULD NOT FIND A UNIQUE END POINT FOR A HINGE ON BLOCK ', self.jface_a.block.name
+            ##     print '  Number of grids found = ', len(a_start_grid_list)
+            ##     return
+            ## pass
+            ## a_start_grid = a_start_grid_list[0]
+            ## self.jface_a.gl.sort(key=lambda g : np.linalg.norm(g.v - a_start_grid.v))
+            ## a_end_grid = self.jface_a.gl[-1]
+
+            ## print 'A START GRID = ', a_start_grid
+            ## print 'A END GRID = ', a_end_grid
+
+
+            ## for g in self.jface_a.gl :
+            ##     print 'LOOKING AT GRID:', g
+            ##     dv = a_start_grid.v - g.v
+            ##     print 'DV =', dv
+            ##     print 'NORM=', np.linalg.norm(g.v - a_start_grid.v)
+            ## pass
+            
+            ## self.jface_a.edge_vector = a_end_grid.v - a_start_grid.v
+            
+            ## a_ortho_grid_list = ma.get_grid_list_from_tags( a_ortho_grid_select_tag, self.jface_a.ortho_gl )
+            ## if( len(a_ortho_grid_list) != 1 ) :
+            ##     print 'ERROR:  COULD NOT FIND A UNIQUE ORTHO GRID POINT DO DEFINE FACE COORDINATE SYSTEM ', self.jface_a.name
+            ##     print '  Number of grids found = ', len(a_ortho_grid_list)
+            ##     return
+            ## pass                
+            ## a_ortho_grid = a_ortho_grid_list[0]    
+
+            ## print 'A SORTED GRIDS ='
+            ## for g in self.jface_a.gl :
+            ##     print g
+            ## pass
+
+            ## print 'A ORTHO GRID = ', a_ortho_grid
+            ## print 'A EDGE VECTOR = ', self.jface_a.edge_vector            
+
+            ## self.jface_a.ortho_vector = a_ortho_grid.v - a_start_grid.v
+            ## print 'A ORTHO VECTOR = ', self.jface_a.ortho_vector            
+
+            ###--
+
+            
+            ## b_start_grid_list = ma.get_grid_list_from_tags(b_min_grid_tag, self.jface_b.gl)
+            ## if( len(b_start_grid_list) != 1 ) :
+            ##     print 'ERROR:  COULD NOT FIND A UNIQUE END POINT FOR A HINGE ON BLOCK ', self.jface_b.block.name
+            ##     print '  Number of grids found = ', len(b_start_grid_list)
+            ##     return
+            ## pass
+            ## b_start_grid = b_start_grid_list[0]
+            ## self.jface_b.gl.sort(key=lambda g : np.linalg.norm(b_start_grid.v - g.v))
+            ## b_end_grid = self.jface_b.gl[-1]
+
+            ## print 'B START GRID = ', b_start_grid
+            ## print 'B END GRID = ', b_end_grid
+            
+            ## self.jface_b.edge_vector = b_end_grid.v - b_start_grid.v
+
+            ## b_ortho_grid_list = mb.get_grid_list_from_tags( b_ortho_grid_select_tag, self.jface_b.ortho_gl )
+            ## if( len(b_ortho_grid_list) != 1 ) :
+            ##     print 'ERROR:  COULD NOT FIND A UNIQUE ORTHO GRID POINT TO DEFINE FACE COORDINATE SYSTEM ', self.jface_b.name
+            ##     print '  Number of grids found = ', len(b_ortho_grid_list)
+            ##     return
+            ## pass                
+            ## b_ortho_grid = b_ortho_grid_list[0]    
+
+            ## print 'B SORTED GRIDS ='
+            ## for g in self.jface_b.gl :
+            ##     print g
+            ## pass
+
+            ## print 'B ORTHO GRID = ', b_ortho_grid
+            ## print 'B EDGE VECTOR = ', self.jface_b.edge_vector            
+
+            ## self.jface_b.ortho_vector = b_ortho_grid.v - b_start_grid.v
+            ## print 'B ORTHO VECTOR = ', self.jface_b.ortho_vector            
+
+            # WE REALLY HAVE TERMS SLAVE AND MASTER BACKWARDS
+            # THE SLAVE IS CALLED THE SLAVE BECAUSE IT HAS A DENSER MESH
+            #  IN THE HINGE DIRECTION AND THEREFORE IT DETERMINES THE NUMBER
+            # OF EQUARTIONS TO BE WRITTEN.  BUT THE SLAVE'S GRIDS (ADD EXTRA GRIDS)
+            # ARE REALLY THE DEPENDENT VARIABLES WHOSE DISPLACEMENTS ARE DETERMINED
+            # BY THE MASTERS GRID DISPLACEMENTS
+
             # SET THE SLAVE FACE TO BE THE ONE WITH THE MOST GRID POINTS ON THE HINGE LINE 
             if( len(self.jface_a.gl) >= len(self.jface_b.gl) ) :
                 self.slave_tag = 'A'
@@ -1493,7 +2117,89 @@ class join(object) :
                 self.master = self.jface_a
             pass
 
+            ## self.slave.face_el.clear()
+            ## for sg in self.slave.gl :
+            ##     sg.tags |= GTAGS.JOIN_SLAVE
+            ##     gel = list(sg.el)
+            ##     for g in gel :
+            ##         self.slave.face_el.add(g)
+            ##     pass
+            ## pass
+
+            ## self.master.face_el.clear()
+            ## for mg in self.master.gl :
+            ##     mg.tags |= GTAGS.JOIN_MASTER
+            ##     gel = list(mg.el)
+            ##     for g in gel :
+            ##         self.master.face_el.add(g)
+            ##     pass
+            ## pass
+
+
+            ## coincident_tol = 0.01 # 1% of hinge line length
+            ## self.edge_vector = self.slave.edge_vector
+            ## print 'EDGE VECTOR = ', self.edge_vector
+
+            ## working_master_gl = copy.copy(self.master.gl)
+            ## for si, sg in enumerate(self.slave.gl) :
+                
+            ##     gmass = grid_mesh_association(sg, self.slave)
+            ##     self.slave.grid_associations[sg] = gmass
+                
+            ##     # NOT SURE WE NEED THE EXTRA GRIDS BUT WE WILL KEEP THEM FOR NOW
+            ##     eg = grid(-1 * sg.id, sg.v[DIR.U], sg.v[DIR.V], sg.v[DIR.W])
+            ##     eg.tags |= GTAGS.HINGED_EXTRA
+            ##     gmass.extra_grid = eg
+            ##     #self.extra_gl[sg] = eg
+                
+            ##     working_master_gl.sort(key=lambda g : np.linalg.norm(g.v - sg.v))
+            ##     pg = working_master_gl[0]
+            ##     #self.slave.partner_grids[sg] = [pg]
+            ##     gmass.add_partner(pg)
+            ##     dv = np.linalg.norm(pg.v - sg.v)
+            ##     #print 'SLAVE GRID = ', sg.id
+            ##     #print 'PARTNER GRID =', pg.id
+            ##     #print 'COINCIDENT TOL = ', np.linalg.norm(self.edge_vector) * coincident_tol
+            ##     #print ' DV = ', dv
+                
+            ##     # HINGES WILL HAVE AT MOST TWO PARTNER GRIDS
+            ##     if( dv > ( np.linalg.norm(self.edge_vector) * coincident_tol ) ) :
+            ##          #print '  -- NOT COINCIDENT'
+            ##          npg = working_master_gl[1]
+            ##          gmass.add_partner(npg)
+            ##          #print '   SECOND PARTNER GRID =', pg.id
+            ##     pass
+
+            ##     if( len(gmass.partner_grids) > 1 ) :
+            ##         fm01, fm10 = distance_factors(gmass.partner_grids[0].v, sg.v, gmass.partner_grids[0].v)
+            ##         gmass.assign_partner_factor(gmass.partner_grids[0], fm01)
+            ##         gmass.assign_partner_factor(gmass.partner_grids[1], fm10)
+            ##     pass
+            
+            ## pass
+
+            ## print '_'*80
+            ## print 'A HINGE LINE GRIDS:', self.jface_a.face_grid_tag, self.jface_a.name
+            ## c = -1
+            ## for ag in self.jface_a.gl :
+            ##    c += 1
+            ##    print c, ag
+            ## pass
+
+            ## print
+
+            ## print 'B HINGE LINE GRIDS:', self.jface_b.face_grid_tag, self.jface_b.name
+            ## c = -1
+            ## for bg in self.jface_b.gl :
+            ##    c += 1
+            ##    print c, bg
+            ## pass
+
+            ## print '_'*80
+
         pass  # END JTAG.HINGE
+
+
 
 ##    ___  __  ______________
 ##   / _ )/ / / /_  __/_  __/
@@ -1515,8 +2221,8 @@ class join(object) :
             self.jface_a.get_face_lines()
             self.jface_b.get_face_lines()
 
-            print 'jface_a.face_gl LENGTH =', len(self.jface_a.face_gl)
-            print 'jface_b.face_gl LENGTH =', len(self.jface_b.face_gl)
+            #print 'jface_a.face_gl LENGTH =', len(self.jface_a.face_gl)
+            #print 'jface_b.face_gl LENGTH =', len(self.jface_b.face_gl)
             
             # SET THE SLAVE FACE TO BE THE ONE WITH THE MOST GRID POINTS ON THE FACE
             if( len(self.jface_a.face_gl) >= len(self.jface_b.face_gl) ) :
@@ -1529,6 +2235,466 @@ class join(object) :
                 self.master = self.jface_a
             pass
             
+            #print 'FIND SLAVE SUFACE ELEMENTS #GRIDS = ', len( self.slave.face_gl )
+            ## self.slave.face_el.clear()
+            ## for sg in self.slave.face_gl :
+            ##     sg.tags |= GTAGS.JOIN_SLAVE
+            ##     #print 'slave looking at grid ', sg.id,  'number of elements = ', len(sg.el)
+            ##     sel = list(sg.el)
+            ##     for e in sel :
+            ##         self.slave.face_el.add(e)
+            ##     pass
+            ## pass
+        
+            #tel = list(self.slave.face_el)
+            #tel.sort(  key = lambda e : e.id )
+            #face_num = int( ( math.log(self.slave.face_grid_tag) / math.log(2.0) ) + 1 )
+            #for se in tel :
+            #    print 'SLAVE ELEMENT # ', se.id, '   FACE # ', face_num
+            #pass
+
+            # FROM CALCULIX MANUAL... face_num
+            #  face 1: 1-2-3-4 -> FTAGS.MIN_W =  1 = GTAGS.MIN_W
+            #  face 2: 5-8-7-6 -> FTAGS.MAX_W =  2 = GTAGS.MAX_W
+            #  face 3: 1-5-6-2 -> FTAGS.MIN_V =  4 = GTAGS.MIN_V
+            #  face 4: 2-6-7-3 -> FTAGS.MAX_U =  8 = GTAGS.MAX_U
+            #  face 5: 3-7-8-4 -> FTAGS.MAX_V = 16 = GTAGS.MAX_V
+            #  face 6: 4-8-5-1 -> FTAGS.MIN_U = 32 = GTAGS.MIN_U
+
+
+            #TBD - WE REALLY OUGHT TO JUST DO THIS DURING OUTPUT
+
+            ## tel = list(self.slave.face_el)
+            ## tel.sort(  key = lambda e : e.id )
+
+            ## face_num = int( ( math.log(self.slave.face_grid_tag) / math.log(2.0) ) + 1 )
+
+            ## # I DON'T THINK THIS IS REALLY NECESSARY - THIS LIST SHOULD ALREADY ONLY THE ELEMENTS WITH THE CORRECT FACES
+            ## #  TBD:   CHECK AND REMOVE IF NOT NEEDED
+            ## ftel = filter( ( lambda ee : ee.tags & ft ), tel )
+            ## fgi = FACE_GRID_INDICES[face_num - 1]
+           
+        
+            #print 'FIND MASTER SUFACE ELEMENTS #GRIDS = ', len( self.master.face_gl )
+            ## self.master.face_el.clear()
+            ## for mg in self.master.face_gl :
+            ##     mg.tags |= GTAGS.JOIN_MASTER
+            ##     #print 'master looking at grid ', mg.id,  'number of elements = ', len(mg.el)
+            ##     mel = list(mg.el)
+            ##     for e in mel :
+            ##         self.master.face_el.add(e)
+            ##     pass
+            ## pass
+        
+            #tel = list(self.master.face_el)
+            #tel.sort(  key = lambda e : e.id )
+            #face_num = int( ( math.log(self.master.face_grid_tag) / math.log(2.0) ) + 1 )
+            #for me in tel :
+            #    print 'SLAVE ELEMENT # ', me.id, '   FACE # ', face_num
+            #pass
+
+            ## working_master_gl = copy.copy(self.master.face_gl)
+            ## # REMOVE ELEMENT_MID_EDGE MASTER NODES - USE ONLY CORNER NODES ON THE FACE
+            ## #  SO WE CAN GET WRITE WEIGHTED EQUATIONS IN BOTH PARAMETRIC DIRECTIONS
+            ## working_master_corner_gl = self.master.block.mesh.get_grid_list_from_tags(GTAGS.ELEMENT_CORNER,
+            ##                                                                  working_master_gl)
+
+            ## print 'CORNER MASTER GRIDS...'
+            ## for si, mg in enumerate(working_master_corner_gl) :
+            ##     print si, mg
+            ## pass
+
+
+
+            ## min_uvw = [ None, None, None ]
+            ## max_uvw = [ None, None, None ]
+            ## min_uvw_grids = [None, None, None]
+            ## max_uvw_grids = [None, None, None]
+
+            ## # GET THE GRIDS WITH THE MAX AND MIN INDICES ON THE SLAVE FACE
+            ## for dd in [ DIR.U, DIR.V, DIR.W ]  :
+            ##     min_uvw_grids[dd] = min(self.slave.face_gl, key=lambda x : x.uvw[dd] )
+            ##     min_uvw[dd] = min_uvw_grids[dd].uvw[dd]
+            ##     max_uvw_grids[dd] = max(self.slave.face_gl, key=lambda x : x.uvw[dd] )
+            ##     max_uvw[dd] = max_uvw_grids[dd].uvw[dd]
+            ##     ## if( dd == DIR.U ) :
+            ##     ##     min_uvw_grids[DIR.U] = min(self.slave.face_gl, key=lambda x : x.uvw[DIR.U] )
+            ##     ##     min_uvw[DIR.U] = min_uvw_grids[DIR.U].uvw[DIR.U]
+            ##     ##     max_uvw_grids[DIR.U] = max(self.slave.face_gl, key=lambda x : x.uvw[DIR.U] )
+            ##     ##     max_uvw[DIR.U] = max_uvw_grids[DIR.U].uvw[DIR.U]
+            ##     ## pass
+            
+            ##     ## if( dd == DIR.V ) :
+            ##     ##     min_uvw_grids[DIR.V] = min(self.slave.face_gl, key=lambda x : x.uvw[DIR.V] )
+            ##     ##     min_uvw[DIR.V] = min_uvw_grids[DIR.V].uvw[DIR.V]
+            ##     ##     max_uvw_grids[DIR.V] = max(self.slave.face_gl, key=lambda x : x.uvw[DIR.V] )
+            ##     ##     max_uvw[DIR.V] = max_uvw_grids[DIR.V].uvw[DIR.V]
+            ##     ## pass
+            
+            ##     ## if( dd == DIR.W ) :
+            ##     ##     min_uvw_grids[DIR.W] = min(self.slave.face_gl, key=lambda x : x.uvw[DIR.W] )
+            ##     ##     min_uvw[DIR.W] = min_uvw_grids[DIR.W].uvw[DIR.W]
+            ##     ##     max_uvw_grids[DIR.W] = max(self.slave.face_gl, key=lambda x : x.uvw[DIR.W] )
+            ##     ##     max_uvw[DIR.W] = max_uvw_grids[DIR.W].uvw[DIR.W]
+            ##     ## pass
+            ## pass
+
+            ## print 'FACE DIRS-=> ', self.slave.face_dirs
+            ## print 'MAX UVW = ', max_uvw
+            ## print 'MIN UVW = ', min_uvw
+
+
+            ## #major_face_dir = self.slave.face_dirs[0]
+            ## #minor_face_dir = self.slave.face_dirs[1]
+            ## slave_face_ref_line_grids_lo = [[], []]
+            ## slave_face_ref_line_grids_hi = [[], []]
+
+            ## di = -1
+            ## for dd in self.slave.face_dirs :
+            ##     #print '*'*44
+            ##     di = di + 1
+            ##     odi = di + 1
+            ##     if( odi == len(self.slave.face_dirs) ) : odi = 0
+                
+            ##     uvw = [None, None, None]
+                
+            ##     uvw[dd] = min_uvw[dd]
+            ##     #print '  di =', di, '  odi =', odi
+            ##     #print 'CURRENT DIR =', self.slave.face_dirs[di]
+            ##     #print 'ORTHO DIR =', self.slave.face_dirs[odi]
+            ##     #print 'MIN UVW = ', uvw
+            ##     slave_face_ref_line_grids_lo[di] = self.slave.block.mesh.get_grid_list_from_indices(
+            ##         uvw[DIR.U], uvw[DIR.V], uvw[DIR.W], self.slave.face_gl)
+
+            ##     slave_face_ref_line_grids_lo[di].sort(key=lambda g : g.uvw[self.slave.face_dirs[odi]] )
+
+            ##     uvw[dd] = max_uvw[dd]
+            ##     #print 'MAX UVW = ', uvw
+            ##     slave_face_ref_line_grids_hi[di] = self.slave.block.mesh.get_grid_list_from_indices(
+            ##         uvw[DIR.U], uvw[DIR.V], uvw[DIR.W], self.slave.face_gl)
+
+            ##     slave_face_ref_line_grids_hi[di].sort(key=lambda g : g.uvw[self.slave.face_dirs[odi]] )
+
+            ## pass
+
+            ## print '*'*44
+            ## print 'SLAVE FACE REF GRID LINE LO MAJOR DIR...'
+            ## for g in slave_face_ref_line_grids_lo[0] :
+            ##     print g
+            ## pass
+
+            ## print '*'*44
+            ## print 'SLAVE FACE REF GRID LINE HI MAJOR DIR...'
+            ## for g in slave_face_ref_line_grids_hi[0] :
+            ##     print g
+            ## pass
+        
+            ## print '*'*44
+            ## print 'SLAVE FACE REF GRID LINE LO MINOR DIR...'
+            ## for g in slave_face_ref_line_grids_lo[1] :
+            ##     print g
+            ## pass
+        
+            ## print '*'*44
+            ## print 'SLAVE FACE REF GRID LINE HI MINOR DIR...'
+            ## for g in slave_face_ref_line_grids_hi[1] :
+            ##     print g
+            ## pass
+
+
+            ## slave_start_grid = slave_face_ref_line_grids_lo[0][0]
+            ## slave_end_grid = slave_face_ref_line_grids_lo[0][-1]
+            ## slave_ortho_grid = slave_face_ref_line_grids_lo[1][-1]           
+            ## self.slave.edge_vector = slave_end_grid.v - slave_start_grid.v
+            ## self.slave.ortho_vector = slave_ortho_grid.v - slave_start_grid.v
+        
+
+
+            
+            ## for si, sg in enumerate(self.slave.face_gl) :
+            ##     print '\nLOOKING AT SLAVE GRID...', sg
+                
+            ##     gmass = grid_mesh_association(sg, self.slave)
+            ##     self.slave.grid_associations[sg] = gmass
+                
+            ##     # NOT SURE WE NEED THE EXTRA GRIDS BUT WE WILL KEEP THEM FOR NOW
+            ##     eg = grid(-1 * sg.id, sg.v[DIR.U], sg.v[DIR.V], sg.v[DIR.W])
+            ##     eg.tags |= GTAGS.BUTT_EXTRA
+            ##     gmass.extra_grid = eg
+                
+            ##     working_master_gl.sort(key=lambda g : np.linalg.norm(g.v - sg.v))
+            ##     pg = working_master_gl[0] # THIS IS THE NEAREST MASTER GRID
+
+
+            ##     vv = pg.v - sg.v
+            ##     dv = np.linalg.norm(vv)
+
+            ##     print 'FOUND CLOSE MASTER GRID :', pg
+            ##     print 'DV = ', dv
+
+
+            ##     # WE ARE SITTING ON A POINT - WE HAVE AN 1 TO 1 RELATIONSHIP
+            ##     if( dv < constants.TOL ) :
+            ##         gmass.add_partner(pg)
+            ##         print 'NEARLY IDENTTICAL MASTER POINT - GOING TO MAP 1 TO 1  dv = ', dv
+            ##         continue
+            ##     pass
+
+            ##     # THE NEAREST POINT WAS A ELEMENT_MID_EDGE POINT AND WAS NOT COINCIDENT WIITH THE PARENT POINT
+            ##     # WE NEED TO FIND THE NEAREST CORNER POINT...
+            ##     if( pg.tags & GTAGS.ELEMENT_MID_EDGE ) :
+            ##         working_master_corner_gl.sort(key=lambda g : np.linalg.norm(g.v - sg.v))
+            ##         pg = working_master_corner_gl[0] # THIS IS THE NEAREST CORNER MASTER GRID
+            ##     pass
+                    
+            ##     gmass.add_partner(pg)
+
+            ##     pg_uvw =  np.zeros( (8, 3), dtype=np.int32 )
+            ##     pg_uvw[0] = [ pg.uvw[DIR.U], pg.uvw[DIR.V], pg.uvw[DIR.W] ]
+
+            ##     # TBD -- WE NEED TO CHECK IF WE ARE RIGHT ON THE EDGE OF AN ELEMENT 
+
+            ##     # LOOK AT NEIGHBORING GRIDS IN THE FACE'S 2-D PARAMETER SPACE
+            ##     #  AND FIND THE CLOSET ONES TO THE POINT OF THE SLAVE FACE WE ARE CONSIDERING
+            ##     i = 0
+            ##     for dd in self.master.face_dirs :
+            ##         #if( dd is None ) : continue
+            ##         i = i + 1
+            ##         uvw = [None, None, None]
+            ##         uvw[dd] = pg_uvw[0][dd]
+            ##         line_o_grids = self.master.block.mesh.get_grid_list_from_indices(
+            ##             uvw[DIR.U], uvw[DIR.V], uvw[DIR.W], working_master_corner_gl)
+
+            ##         if( pg in line_o_grids ) :
+            ##             line_o_grids.remove(pg)
+            ##         pass
+
+            ##         # ^^^ REMOVE THE GRIDS THAT DO NOT REFERENCE ANY OF THE ELEMENTS THAT THE FIRST PARTNER GRID DOES
+            ##         line_o_grids = filter( lambda g : len(set(pg.el).intersection(set(g.el))) != 0, line_o_grids)
+
+            ##         line_o_grids.sort(key=lambda g : np.linalg.norm(g.v - pg.v))
+            ##         npg = line_o_grids[0]
+            ##         pg_uvw[i] =  [ npg.uvw[DIR.U], npg.uvw[DIR.V], npg.uvw[DIR.W] ]
+            ##         gmass.add_partner(npg)
+            ##         #sg.partner_grids.append(npg)
+            ##     pass
+
+                ## print 'PARTNER GRIDS... (#=', len(sg.partner_grids)
+                ## for tpg in sg.partner_grids :
+                ##     print tpg
+                ##     ell = list(tpg.el)
+                ##     print ' BELONGS TO ELEMENTS:'
+                ##     for ee in ell :
+                ##         print '  ', ee.id,
+                ##     pass
+                ##     print
+                ## pass
+
+
+                ## tes = pg.el
+                ## for tpg in sg.partner_grids :
+                ##     tes = tes.intersection(tpg.el)
+                ## pass
+                ## print 'COMMON ELEMENTS =  (#=',len(tes)
+                ## tel = list(tes)
+                ## for ee in tel :
+                ##     print '  ', ee.id,
+                ## pass
+                ## print
+            
+
+                # MAKE SURE THEY ALL BELONG TO THE SAME ELEMENT
+                #  NOT SURE WE NEED TO DO THIS ANY MORE SINCE WE ADDED THe FILTER ABOVE- SEE LINE MARKED ^^^
+                ## tes = pg.el
+                ## for tpg in gmass.partner_grids :
+                ##     tes = tes.intersection(tpg.el)
+                ## pass
+
+                ## if( len(tes) == 1 ) :
+                ##     if( len(gmass.partner_grids) == 3 ) :
+                ##         # USING INDICES - FIND THE DIAGONAL GRID ON THE ELEMENT FACE 
+                ##         duvw1 = pg_uvw[1] - pg_uvw[0]
+                ##         duvw2 = pg_uvw[2] - pg_uvw[0]
+                ##         print 'DUVW1 = ', duvw1
+                ##         print 'DUVW2 = ', duvw2
+                ##         pg_uvw[3] = pg_uvw[0] + duvw1 + duvw2
+                ##         print pg_uvw
+                ##         dpg = self.master.block.mesh.gl[ pg_uvw[3][0], pg_uvw[3][1], pg_uvw[3][2] ]
+                ##         gmass.add_partner(dpg)
+
+                ##         print 'SLAVE ='
+                ##         print sg
+                ##         print 'FIRST PARTNER...'
+                ##         print pg
+                ##         print 'SIDE PARTNERS...'
+                ##         print gmass.partner_grids[1]
+                ##         print gmass.partner_grids[2]
+                ##         print 'DIAGONAL PARTNER...'
+                ##         print dpg
+
+
+                ##         mduvw1 = duvw1 / 2
+                ##         mduvw2 = duvw2 / 2
+                ##         pg_uvw[4] = pg_uvw[0] + mduvw1
+                ##         pg_uvw[5] = pg_uvw[0] + mduvw2
+                ##         pg_uvw[6] = pg_uvw[4] + duvw2
+                ##         pg_uvw[7] = pg_uvw[5] + duvw1
+                        
+                ##         print 'MDUVW1 = ', mduvw1
+                ##         print 'MDUVW2 = ', mduvw2
+                ##         print 'GP_UVW[4] =', pg_uvw[4]
+                ##         print 'GP_UVW[5] =', pg_uvw[5]
+                ##         print 'GP_UVW[6] =', pg_uvw[6]
+                ##         print 'GP_UVW[7] =', pg_uvw[7]
+                        
+                ##         for ii in range(4, 8) :
+                ##             gmass.add_partner( self.master.block.mesh.gl[ pg_uvw[ii][0], pg_uvw[ii][1], pg_uvw[ii][2] ] )
+                ##         pass
+
+                ##         print 'midside grid 0->1',  self.master.block.mesh.gl[ pg_uvw[4][0], pg_uvw[4][1], pg_uvw[4][2] ]
+                ##         print 'midside grid 0->2',  self.master.block.mesh.gl[ pg_uvw[5][0], pg_uvw[5][1], pg_uvw[5][2] ]
+                ##         print 'midside grid 3->2',  self.master.block.mesh.gl[ pg_uvw[6][0], pg_uvw[6][1], pg_uvw[6][2] ]
+                ##         print 'midside grid 3->1',  self.master.block.mesh.gl[ pg_uvw[7][0], pg_uvw[7][1], pg_uvw[7][2] ]
+
+                ##         gmass.interp_coef_2d_field_from_corner_points()
+                        
+
+                ##         ## tese = tes.pop()
+                ##         ## fgl = self.master.block.mesh.get_grid_list_from_tags( self.master.face_grid_tag, tese.gl )
+                ##         ## print 'ALL FGL='
+                ##         ## for g in fgl :
+                ##         ##     print '         ', g
+                ##         ## pass
+                        
+                ##         ## fgl = self.master.block.mesh.get_grid_list_from_tags( GTAGS.ELEMENT_MID_EDGE, fgl )
+                ##         ## print 'FGL='
+                ##         ## for g in fgl :
+                ##         ##     print '         ', g
+                ##         ## pass
+                        
+
+
+
+                ##     pass
+                ## pass
+
+
+
+##http://stackoverflow.com/questions/5401601/problem-deleting-list-items-in-a-for-loop-python
+## def delete_items(titles):
+##     deleted_items = []
+##     for title in titles:
+##         print('keep %s?' % title)
+##         if str(raw_input().upper()) == 'N':
+##             deleted_items.append(title)
+##     return [e for e in titles if e not in deleted_items]
+
+
+
+
+                ## # THIS IS A LITTLE BRUTE FORCE
+                ## # IT IS HARD TO DELETE FROM A LIST YOU ARE ITERATING OVER
+                ## #  EXPECIALLY WHEN YOU NEED TO DELETE THE ASSOCIATED partner_factors ENTRY
+                ## del_cnt = 1
+                ## while( del_cnt > 0 ) : 
+                ##     del_cnt = 0
+                ##     for tpg in gmass.partner_grids :
+                ##         if( gmass.partner_factors[tpg] < constants.TOL ) :
+                ##             del gmass.partner_factors[tpg]
+                ##             gmass.partner_grids.remove(tpg)
+                ##             del_cnt += 1
+                ##             break
+                ##         pass
+                ##     pass
+                ## pass
+
+
+
+                ## print 'PARTNER GRIDS... (#=', len(gmass.partner_grids)
+                ## for tpg in gmass.partner_grids :
+                ##     print tpg
+                ##     ell = list(tpg.el)
+                ##     print ' BELONGS TO ELEMENTS:'
+                ##     for ee in ell :
+                ##         print '  ', ee.id,
+                ##     pass
+                ##     print
+                ## pass
+
+                ## tes = pg.el
+                ## for tpg in gmass.partner_grids :
+                ##     tes = tes.intersection(tpg.el)
+                ## pass
+                ## print 'COMMON ELEMENTS =  (#=',len(tes)
+                ## tel = list(tes)
+                ## for ee in tel :
+                ##     print '  ', ee.id,
+                ## pass
+                ## print
+                
+                
+
+
+
+                ## print 'COMMON'
+                ## comcome = set(tel)
+                ## tel = list(comcome)
+                ## for ee in tel :
+                ##     print '  ', ee.id,
+                ## pass
+                ## print
+               
+
+                
+
+                ## tgl = list(gmass.partner_grids)
+                ## com_el = tgl[0].el
+                ## for tpg in gmass.partner_grids :
+                ##     com_el = com_el.intersection(tpg.el)
+                ## pass
+                ## print 'COMMON ELEMENTS = ', com_el
+
+            pass  # END slave.face_gl LOOP
+
+
+                ## deltas = [ 0, 0, 0 ]
+                ## for i in self.master.face_dirs :
+                ##     deltas[i] = 1
+                ## pass
+
+                ## neighbor_indices = []
+                ## if( ( self.face_tag == FTAGS.MAX_U )
+                ##     or ( self.face_tag == FTAGS.MIN_U ) ) :
+                ##     neighbor_indices.append( pg.uvw[DIR.U], pg.uvw[DIR.V] + 1, pg.uvw[DIR.W] )  
+                ##     neighbor_indices.append( pg.uvw[DIR.U], pg.uvw[DIR.V], pg.uvw[DIR.W] + 1 )  
+                ##     neighbor_indices.append( pg.uvw[DIR.U], pg.uvw[DIR.V] - 1, pg.uvw[DIR.W] )  
+                ##     neighbor_indices.append( pg.uvw[DIR.U], pg.uvw[DIR.V], pg.uvw[DIR.W] - 1 )
+                ## pass
+                ## if( ( self.face_tag == FTAGS.MAX_V )
+                ##     or ( self.face_tag == FTAGS.MIN_V ) ) :
+                ##     neighbor_indices.append( pg.uvw[DIR.U] + 1, pg.uvw[DIR.V], pg.uvw[DIR.W] )  
+                ##     neighbor_indices.append( pg.uvw[DIR.U], pg.uvw[DIR.V], pg.uvw[DIR.W] + 1 )  
+                ##     neighbor_indices.append( pg.uvw[DIR.U] - 1, pg.uvw[DIR.V], pg.uvw[DIR.W] )  
+                ##     neighbor_indices.append( pg.uvw[DIR.U], pg.uvw[DIR.V], pg.uvw[DIR.W] - 1 )
+                ## pass
+                ## if( ( self.face_tag == FTAGS.MAX_W )
+                ##     or ( self.face_tag == FTAGS.MIN_W ) ) :
+                ##     neighbor_indices.append( pg.uvw[DIR.U] + 1, pg.uvw[DIR.V], pg.uvw[DIR.W] )  
+                ##     neighbor_indices.append( pg.uvw[DIR.U], pg.uvw[DIR.V] + 1, pg.uvw[DIR.W] )  
+                ##     neighbor_indices.append( pg.uvw[DIR.U] - 1, pg.uvw[DIR.V], pg.uvw[DIR.W] )  
+                ##     neighbor_indices.append( pg.uvw[DIR.U], pg.uvw[DIR.V] - 1, pg.uvw[DIR.W] )
+                ## pass
+
+
+                ## dirs = [ DIR.U, DIR.V, DIR.W ]
+                ## for n in neighbor_indices :
+                ##     for d in dirs :
+                ##         if( neighbor_indices
+
+
+                # NEED TO DETERMINE WHAT ELEMENT IF FALLS IN
+                # IF IT DOES NOT FALL INSIDE AN ELEMENT THEN WE RIGHT EQUATIONS BASED ON THE LAPPED AREA ???
+        
         pass # END JTAGS.BUTT
 
 ##    ___  ________________
@@ -1568,46 +2734,23 @@ class join(object) :
 
 
     
-        print 'SLAVE GRIDS...'
         self.slave.face_el.clear()
-        for sg in self.slave.face_gl :
+        for sg in self.slave.gl :
             sg.tags |= GTAGS.JOIN_SLAVE
-            print sg
-            eel = list(sg.el)
-            for e in eel :
-                print '   USES ELEMENT ', e
-                self.slave.face_el.add(e)
+            gel = list(sg.el)
+            for g in gel :
+                self.slave.face_el.add(g)
             pass
         pass
 
-        print 'MASTER GRIDS...'
         self.master.face_el.clear()
-        for mg in self.master.face_gl :
+        for mg in self.master.gl :
             mg.tags |= GTAGS.JOIN_MASTER
-            print mg
-            eel = list(mg.el)
-            for e in eel :
-                print '   USES ELEMENT ', e
-                self.master.face_el.add(e)
+            gel = list(mg.el)
+            for g in gel :
+                self.master.face_el.add(g)
             pass
         pass
-
-
-        print 'SLAVE elements...'
-        tel = list(self.slave.face_el)
-        tel.sort(  key = lambda e : e.id )
-        for e in tel :
-            print 'SLAVE ELEMENT # ', e.id
-        pass
-
-
-        print 'MASTER elements...'
-        tel = list(self.master.face_el)
-        tel.sort(  key = lambda e : e.id )
-        for e in tel :
-            print 'MASTER ELEMENT # ', e.id
-        pass
-
         
     pass
 
@@ -1622,13 +2765,15 @@ class model(object) :
         self.blocks = []
         self.meshes = []
         self.joins = []
-
+        #  THESE ARE EXTRA GRIDS FOR HINGES
+        #self.extra_gl = {} # THIS IS NOW A DICTIONARY WHOSE INDEX IS THE GRID WITH THE MINIMUM ID OF THE PARTNER_GRIDS
         self.materials = []
         self.initial_temp = constants.DEFAULT_INITIAL_TEMP;
         self.reference_temp = constants.DEFAULT_REFERENCE_TEMP; # SEE CALCULIX *EXPANSION CARD
         self.NPSS_materials = {};
         self.results_elements = [] # THIS IS A LIST OF ELEMENT CREATED WHEN THE RESULTS ARE READ IF THEY ARE NOT FOUND IN THE MESHES
-
+        #self.stress_maxs = {}
+        #self.stress_mins = {}
         self.safety_factor_yield = 1.0
         self.safety_factor_ultimate = 1.0
         self.header_text_lines = []
@@ -1741,11 +2886,28 @@ class model(object) :
 
     #----------------------------------------------------------------------------------------------------
 
+    ## def add_mesh(self, mname) :
+    ##     m = mesh(mname)
+    ##     m.model = self
+    ##     self.meshes.append(m)
+    ##     return(m)
+    ## pass
+
+    #----------------------------------------------------------------------------------------------------
+
     def add_material(self, mname) :
         m = material(mname)
         self.materials.append(m)
         return(m)
     pass
+
+    #----------------------------------------------------------------------------------------------------
+
+    ## def add_join(self, jname, ba, ba_tag, bb, bb_tag, jtype) :
+    ##     j = join(jname, ba, ba_tag, bb, bb_tag, jtype, self)
+    ##     self.joins.append(j)
+    ##     return(j)
+    ## pass
 
     #----------------------------------------------------------------------------------------------------
 
@@ -1777,6 +2939,24 @@ class model(object) :
         return(j)
     pass
     
+    #----------------------------------------------------------------------------------------------------
+    ## TBD
+    ## def add_block_edge_hinge_join(self, ba, ba_edge_index, bb, bb_edge_index) :
+    ##     j = join(ba, None, bb, None, JTAGS.HINGE, self)
+    ##     j.set_a_hinge_direction(ba_edge_index)
+    ##     j.set_b_hinge_direction(bb_edge_index)
+    ##     self.joins.append(j)
+    ##     return(j)
+    ## pass
+
+    #----------------------------------------------------------------------------------------------------
+
+    ## def add_join(self, ma, ma_tag, mb, mb_tag, jtype) :
+    ##     j = join(ma, ma_tag, mb, mb_tag, jtype, self)
+    ##     self.joins.append(j)
+    ##     return(j)
+    ## pass
+
     #----------------------------------------------------------------------------------------------------
 
     def generate_mesh(self) :
@@ -1870,7 +3050,8 @@ class model(object) :
                 # http://www.faqs.org/docs/diveintopython/kgp_child.html
                 # http://www.faqs.org/docs/diveintopython/kgp_parse.html
                 count_cards = dict.fromkeys(NPSS_required_fields, 0)
-
+                #cards = dict.fromkeys(NPSS_required_fields, 0.0)
+                #count_cards = {}
                 eprops = [e for e in et.childNodes if e.nodeType == e.ELEMENT_NODE]
                 for ep in eprops :
                     tag = ep.tagName
@@ -1899,6 +3080,8 @@ class model(object) :
                     mp = None
                     break
                 pass
+
+                # NPSS_required_fields = ['E', 'alpha', 'poissonRatio', 'rho']
 
                 temp = float(mat_temp)
                 ym = mp.props['E']
@@ -1989,8 +3172,8 @@ class model(object) :
         gl = filter( ( lambda g: g is not None ), gl)
 
 
-        # RIGHT NOW WE ARE ASSUMING WE ARE READING THE RESULTS OF THE MESH THAT IS IN MEMORY
-        #  IN THE FUTURE WE COULD (SHOULD?) BE ABLE TO READ THE FULL MESH IN FROM THE FRD FILE
+        # RIGHT NOW WE ARE ASSUMING WE ARE READING THE REUSLTS OF THE MESH THAT IS IN MEMORY
+        #  IN THE FUTURE WE SHOULD BE ABLE TO READ THE FULL MESH IN FROM THE FRD FILE
         #    RIGHT NOW WE WILL ASSUME THAT IS REDUNDANT.
 
         # NOTE: FOR NLGEOM ANLAYSES WITH MUTLIPLE TIME INCREMENTS
@@ -2421,11 +3604,122 @@ class model(object) :
     #----------------------------------------------------------------------------------------------------
 
     def stitch(self) :
+
+        #max_gid = 0
+        #for m in self.meshes :
+        #    max_gid = max(max_gid, m.gid_max)
+        #pass
+
                           
         for j in self.joins :
             print 'JOIN : ', j
             j.sew()
         pass
+
+        # LIST OF ALL GRIDS
+        #ggl = []
+        #for m in self.meshes :
+        #    ggl = ggl + m.gl
+        #pass
+
+        #print 'ELEMENTS BEFORE SEW...' 
+        #for m in self.meshes :
+        #    for e in m.el :
+        #        print e
+        #    pass
+        #pass
+
+
+        ## TBD - TBD - TBD
+        ## # HAVE TO DO MERGES BEFORE WE DO HINGES 
+        ## for j in self.joins :
+        ##     j.sew(JTAGS.BUTT) # TBD
+        ## pass
+        ##
+        ## # SWAP GRIDS TAGGED AS REMOVED WITH THE ACTIVE GRID AFTER ALL THE MERGE TYPE JOINS HAVE BEEN SEWN - THEN DO THE HINGES
+        ## # AFTER THIS THE JOIN GRID LISTS (A & B) WILL ONLY CONTAIN GRIDS THAT ARE NOT TAGGED AS REMOVED
+        ## # WE SHOULD NOT NEED TO CHECK FOR REMOVED GRIDS IN THE OUTPUT ROUTINES
+        ## for  j in self.joins :
+        ##     agllen = len(j.jface_a.gl)
+        ##     for i in range(agllen) :
+        ##         g = j.jface_a.gl[i]
+        ##         if( g.tags & GTAGS.REMOVED ) :
+        ##             tgl = g.get_active_partner_grids()
+        ##             if( len(tgl) != 1 ) :
+        ##                 print 'WARNING !!!  - A tgl is the wrong size -', len(tgl), ' for g=', g
+        ##                 print here()
+                        
+        ##                 print 'PARTNER GRIDS = ', len(g.partner_grids) 
+        ##                 cnt = 0
+        ##                 for ggg in list(g.partner_grids) :
+        ##                     print cnt, ggg
+        ##                     cnt = cnt + 1
+        ##                 pass
+        ##                 print 
+        ##             pass
+        ##             #if( len( tgl ) == 0 ) : continue
+        ##             g = tgl[0] # ASSUME THERE IS ONLY ONE - WHICH IS THE CASE IF THE REMOVE IS RESULTING FROM A MERGE
+        ##             j.jface_a.gl[i] = g
+        ##         pass
+        ##     pass
+        
+        ##     bgllen = len(j.jface_b.gl)
+        ##     for i in range(bgllen) :
+        ##         g = j.jface_b.gl[i]
+        ##         if( g.tags & GTAGS.REMOVED ) :
+        ##             tgl = g.get_active_partner_grids()
+        ##             if( len(tgl) != 1 ) :
+        ##                 print 'WARNING !!!  - B tgl is the wrong size -', len(tgl), ' for g=', g
+        ##                 print here()
+                        
+        ##                 print 'PARTNER GRIDS = ', len(g.partner_grids) 
+        ##                 cnt = 0
+        ##                 for ggg in list(g.partner_grids) :
+        ##                     print cnt, ggg
+        ##                     cnt = cnt + 1
+        ##                 pass
+                        
+        ##             pass
+        ##             #if( len( tgl ) == 0 ) : continue
+        ##             g = tgl[0] # ASSUME THERE IS ONLY ONE - WHICH IS THE CASE IF THE REMOVE IS RESULTING FROM A MERGE
+        ##             j.jface_b.gl[i] = g
+        ##         pass
+        ##     pass
+        ## pass
+
+
+        # HAVE TO PROCESS THE HINGES AFTER THE ALL THE MERGES  - IN CASE THERE IS SOME COMMONALITY IN THE GRIDS BEING AFFECTED
+        #for j in self.joins :
+        #    j.sew(JTAGS.HINGE)
+        #pass
+
+        # ALL GRID ASSOCIATIONS ARE MAINTAINED BY THE SLAVE JOIN FACE
+        ## gid = self.gid_max
+        ## for j in self.joins :
+        ##     for kg, gmass in j.slave.grid_associations.items() :
+        ##         print 'KG =', kg
+        ##         print 'GMASS.SLAVE_GRID =', gmass.slave_grid
+        ##         #kg = gmass.slave_grid
+        ##         eg = gmass.extra_grid
+        ##         print 'EXTRA GRID =', gmass.extra_grid
+        ##         gid += 1
+        ##         print 'RE-ASSIGNING GRID ID ', gid, 'TO EXTRA GRID WHOSE KEY GRID IS ', kg.id, ' (IT WAS ', eg.id, ' )'
+        ##         eg.id = gid
+        ##     pass
+        ## pass
+        ## self.gid_max = gid
+
+        #print 'ELEMENTS AFTER SEW...' 
+        #for m in self.meshes :
+        #    for e in m.el :
+        #        print e
+        #    pass
+        #pass
+
+        for b in self.blocks :
+            b.mesh.calc_grid_to_element_back_pointers()
+        pass
+
     pass
 
     #----------------------------------------------------------------------------------------------------
@@ -2455,6 +3749,7 @@ class model(object) :
         #    print 'GRID:', g
         #pass
         
+        #ggl = ggl + list(self.extra_gl.values())
 
         # LIST OF ALL ELEMENTS
         gel = []
@@ -2470,9 +3765,16 @@ class model(object) :
         #pass
 
 
+        # TBD
+        # TAG UNUSED GRIDS WITH NEGATIVE IDS
+        ## for g in ggl :
+        ##     if( g.tags & GTAGS.REMOVED ) :
+        ##         g.id = -1 * abs(g.id)
+        ##     pass
+        ## pass
 
         for m in self.materials :
-            m.mat_props.sort(key = lambda prp: prp.temperature)
+            m.mat_props.sort(key=lambda prp: prp.temperature)
             m.lo_temp_defined = m.mat_props[0].temperature
             m.hi_temp_defined = m.mat_props[-1].temperature
         pass
@@ -2505,6 +3807,41 @@ class model(object) :
             m.save_abq_grids(fp)
             fp.write('** <END> ' + '~-~' * 15 + ' ' + m.nset_name  +' NODES\n')
         pass
+
+        ## egl = []
+        ## for j in self.joins :
+        ##     for eg in j.extra_gl.values() :
+        ##         egl.append(eg)
+        ##     pass
+        ## pass
+        ## egl.sort(key=lambda g: g.id)
+                
+        ## if( len(egl) > 0 ) :
+        ##     fp.write('*** <BEGIN> EXTRA NODES FOR HINGE EQUATIONS' + '\n')
+        ##     fp.write('*NODE, NSET=GHING' + '\n')
+        ##     for eg in egl :
+        ##         eg.save_abq(fp)
+        ##     pass
+        ##     fp.write('*** <END> EXTRA NODES FOR HINGE EQUATIONS' + '\n')
+        ## pass
+
+        ## for j in self.joins :
+        ##     if( j.type != JTAGS.HINGE ) : continue
+        ##     egl = []
+        ##     for g, gmass in j.slave.grid_associations.items() :
+        ##         egl.append(gmass.extra_grid)
+        ##     pass
+        ##     egl = filter( ( lambda g: g is not None ), egl)
+        ##     if( len(egl) > 0 ) :
+        ##         fp.write('*** <BEGIN> EXTRA NODES FOR JOIN EQUATIONS ' + j.name + '\n')
+        ##         s = j.name + '_X'
+        ##         fp.write('*NODE, NSET=' + s + '\n')
+        ##         for eg in egl :
+        ##             eg.save_abq(fp)
+        ##         pass
+        ##         fp.write('*** <END> EXTRA NODES FOR JOIN EQUATIONS ' + j.name  + '\n')
+        ##     pass
+        ## pass
 
         fp.write('*NSET, NSET=NALL' + '\n')
         
@@ -2657,8 +3994,7 @@ class model(object) :
                 
                 tel = list(jfm.face_el)
                 tel.sort(  key = lambda e : e.id )
-                face_num = constants.FACE_NUM(jfm.face_grid_tag)
-                #face_num = int( ( math.log(jfm.face_grid_tag) / math.log(2.0) ) + 1 )
+                face_num = int( ( math.log(jfm.face_grid_tag) / math.log(2.0) ) + 1 )
                 for me in tel :
                     fp.write(feq.format(me.id, face_num) + '\n')
                 pass
@@ -2702,8 +4038,7 @@ class model(object) :
 
                 tel = list(jfs.face_el)
                 tel.sort(  key = lambda e : e.id )
-                face_num = constants.FACE_NUM(jfs.face_grid_tag)
-                #face_num = int( ( math.log(jfs.face_grid_tag) / math.log(2.0) ) + 1 )
+                face_num = int( ( math.log(jfs.face_grid_tag) / math.log(2.0) ) + 1 )
                 for se in tel :
                     fp.write(feq.format(se.id, face_num) + '\n')
                 pass
@@ -2723,8 +4058,7 @@ class model(object) :
 
                 tel = list(jfm.face_el)
                 tel.sort(  key = lambda e : e.id )
-                face_num = constants.FACE_NUM(jfm.face_grid_tag)
-                #face_num = int( ( math.log(jfm.face_grid_tag) / math.log(2.0) ) + 1 )
+                face_num = int( ( math.log(jfm.face_grid_tag) / math.log(2.0) ) + 1 )
                 for me in tel :
                     fp.write(feq.format(me.id, face_num) + '\n')
                 pass
@@ -2785,7 +4119,8 @@ class model(object) :
 
         vl = [None] * 3 # WORKING VECTOR LIST
 
-
+        ## face_tags = [ FTAGS.MAX_U, FTAGS.MIN_U, FTAGS.MAX_V, FTAGS.MIN_V, FTAGS.MAX_W, FTAGS.MIN_W ]
+        ## face_tags_exploded = [ FTAGS.MAX_W, FTAGS.MIN_W ]
         print 'WRITE PRESSURE'
         for b in self.blocks :
             m = b.mesh
@@ -2934,7 +4269,6 @@ class model(object) :
                         # AT THE BLOCK EDGES.
                         # ALL THE OTHER PARAMETERS ARE AVERAGED THROUGH OUT THE VOLUME
                         # OF THE BLOCK
-                        
                         scale_factor_1 = g.norm_uvw[ interp_dirs[0] ]
                         scale_factor_2 = g.norm_uvw[ interp_dirs[1] ]
                         print 'SCALE FACTOR 1 =', scale_factor_1
@@ -2985,7 +4319,13 @@ class model(object) :
 
                 pass
             pass
-
+                            
+            ## for e in tel  :
+            ##     pres = e.avg_grid.get_param('PRES')
+            ##     if( pres is None ) : continue
+            ##     if( abs(pres) < constants.TOL ) : continue
+            ##     fp.write(str(e.id) + ', P, ' + str(pres) + '\n')
+            ## pass
         pass
        
         tcnt = 0
@@ -3009,7 +4349,10 @@ class model(object) :
         pass
 
 
-
+        #  CALCULIX HAS A BUG - IT DOES NOT CALCULATE SHELL STRESSES RIGHT
+        #  UNLESS YOU ASK FOR 'OUTPUT=3D'
+        #    THIS WILL ONLY PUT THE CORRECT STRESSES IN THE FRD FILE FOR
+        #    THE DYNAMICALLY CREATED 3D MESH
         fp.write('*' * 80 + '\n')
 
         fp.write('*NODE PRINT, NSET=NALL' + '\n')

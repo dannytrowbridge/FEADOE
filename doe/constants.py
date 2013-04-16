@@ -110,15 +110,13 @@ grid_tags = [
     'HINGED',
     'HINGED_FACE',
     'HINGED_EXTRA',
-    'MERGED',
-    'MERGED_FACE',
-    'MERGED_EXTRA',
-    'REMOVED',
-    'EXPANDED_PARENT',
-    'EXPANDED',
-    'EXPANDED_CHILD',
-    'EXPANDED_CLONE',
-    'EXPANDED_MIDDLE'
+    'BUTT',
+    'BUTT_FACE',
+    'BUTT_EXTRA',
+    'RIGID',
+    'RIGID_FACE',
+    'RIGID_EXTRA',
+    'REMOVED'
     ]
 
 GTAGS = namedtuple('GTAGS',
@@ -221,7 +219,8 @@ FACE_GRID_INDICES[ FACE_NUM(FTAGS.MIN_U) - 1 ] = [ 4, 8, 5, 1 ]
 
 
 join_tags = [
-    'MERGE',
+    'BUTT',
+    'RIGID',
     'HINGE'
     ]
 

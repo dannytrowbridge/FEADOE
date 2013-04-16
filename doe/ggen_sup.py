@@ -567,13 +567,11 @@ class block(object) :
         self.tags = 0
         self.defined_by_tag = -1
         self.name = name
-        #self.mesh = mesh(name + '_MESH')
-        #self.mesh.block = self # BACK POINTER FROM THE MESH TO THIS BLOCK
+
         self.mesh = None
-        #self.mesh.block = None # BACK POINTER FROM THE MESH TO THIS BLOCK
+
         self.model = model
         self.faces = {} # FACES DICT
-        #self.faces = OrderedDict()
         self.pl = {} # POINT DICT
         self.el = {} # EDGE DICT
         
@@ -1147,17 +1145,17 @@ class block(object) :
         pl = []
 
         for pn, pi, fiv in til :
-            print 'pn=', pn
-            print 'pi=', pi
-            print 'fiv=', fiv
+            #print 'pn=', pn
+            #print 'pi=', pi
+            #print 'fiv=', fiv
             tp.__init__()
             del pl[:]
             for ft, il in fiv:
                 pl.append(self.faces[ft].edges[il[0]].sp)
                 pl.append(self.faces[ft].edges[il[1]].ep)
-                print 'FACE TAG =', ft,
-                print '  START POINT EDGE INDEX =', il[0], '  PRESSURE =', self.faces[ft].edges[il[0]].sp.get_param('PRES', 0.0)
-                print '  END POINT EDGE INDEX =', il[1], '  PRESSURE =', self.faces[ft].edges[il[1]].sp.get_param('PRES', 0.0)
+                #print 'FACE TAG =', ft,
+                #print '  START POINT EDGE INDEX =', il[0], '  PRESSURE =', self.faces[ft].edges[il[0]].sp.get_param('PRES', 0.0)
+                #print '  END POINT EDGE INDEX =', il[1], '  PRESSURE =', self.faces[ft].edges[il[1]].sp.get_param('PRES', 0.0)
             pass
             tp.calc_avg_parameter_data_from_point_list(pl)
             self.pl[pi].v = copy.deepcopy(tp.v)

@@ -7,7 +7,7 @@ from doe.constants import LOC, DIR, DOF, GTAGS, ETAGS, FTAGS, JTAGS
 import math
 import copy
 
-anal = doe_analysis.analysis('PGV1')
+anal = doe_analysis.analysis('PLAYGROUND_RIGID')
 anal.add_indep_var('Pressure', [-10000.0])
 anal.add_indep_var('matty', ['Alloy_713LC'])
 
@@ -175,7 +175,7 @@ def define_model(self) :
     blk_a.define_block_from_faces(f1, f2, f3, f4_L, f5, f6)
 
 
-    self.plot_blocks()
+    #self.plot_blocks()
 
 
     # BLOCK :  +/- 1 parametric CUBE CENTERED AT ZERO
@@ -188,11 +188,14 @@ def define_model(self) :
     
 
     #                              NAME,  BLOCK,   GRID_TAG
-    self.add_block_face_rigid_join('XRA', blk_x, GTAGS.MIN_W,
-                                          blk_a, GTAGS.MIN_U) 
+    self.add_rigid_join('XRA', blk_x, GTAGS.MIN_W,
+                             blk_a, GTAGS.MIN_U) 
+
+#    self.add_butt_join('XBA', blk_x, GTAGS.MIN_W,
+#                              blk_a, GTAGS.MIN_U) 
 
     #                              BLOCK,   GRID_TAG,    HINGE_AXIS_DIR
-    #self.add_block_face_hinge_join('AHB', ms['A'], GTAGS.MIN_U, DIR.V,
+    #self.add_hinge_join('AHB', ms['A'], GTAGS.MIN_U, DIR.V,
     #                               ms['B'], GTAGS.MIN_V, DIR.U) 
 
     # MUST GENERATE THE MESH BEFORE YOU CAN APPLY THE BOUNDARY CONDITIONS
