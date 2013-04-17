@@ -1,13 +1,13 @@
+import sys
 import doe.analysis as doe_analysis
 import doe.gfea_model as fea
 from doe.ggen_sup import point, vector, face
-#import doe.constants
 from doe.constants import LOC, DIR, DOF, GTAGS, ETAGS, FTAGS, JTAGS
 
 import math
 import copy
 
-anal = doe_analysis.analysis('PGV_FB1')
+anal = doe_analysis.analysis('PLAYGROUND_1')
 anal.add_indep_var('Pressure', [-10000.0])
 anal.add_indep_var('matty', ['Alloy_713LC'])
 
@@ -23,7 +23,7 @@ def define_model(self) :
     mat.set_number_of_output_divisions(1)
 
 
-    common_params =  { 'PRES': 0.0 }
+    common_params =  { 'PRES': 0.0, 'THICK': 1.0 }
 
     # FROM CALCULIX MANUAL...
     #  face 1: 1-2-3-4 -> FTAGS.MIN_W - 1
@@ -35,24 +35,6 @@ def define_model(self) :
 
     # Must use faces (not points) so we can change pressures, etc. independently on each face  
 
-##                            
-##                                                   
-##                8                        7    
-##               .:........................  
-##             .' |      F2             .'
-##         5 .:....................._.-' |
-##           |    |                 |6   |
-##           |    |      F5(back)   |    |
-##           |    |                 |    |                   
-##           | F6 |    F3(front)    | F4 |
-##           |    |                 |    |
-##           |    |4                |    |
-##           |   .'.................|....' 3
-##           |  /        F1         | .'
-##           `.:....................|'
-##           1                      2
-##                                  
-## FACE NORMALS POINT IN
 ##                            W
 ##                          |                   .-' V
 ##      -1,1,1              |                .-'
@@ -70,6 +52,8 @@ def define_model(self) :
 ##           `.:....................|'
 ##
 ##        -1,-1,-1                 1,-1,-1
+##
+## FACE NORMALS POINT IN
 
 
     xlox = 0.0
@@ -104,11 +88,11 @@ def define_model(self) :
 
 
     lox = 0.0
-    hix = 4.0
+    hix = 5.0
     offx = 0.0
     
-    loy = -0.5
-    hiy = 0.5
+    loy = -10.0
+    hiy = 10.0
     offy = 0.0
     
     loz = -0.5
@@ -140,6 +124,23 @@ def define_model(self) :
 
 
     
+    ##                           ^ W               / V
+    ##                           |                /       
+    ##                8          |             7 /   
+    ##               .:........................  
+    ##             .' |      F2             .'
+    ##         5 .:....................._.-' |
+    ##           |    |                 |6   |
+    ##           |    |      F5(back)   |    |
+    ##           |    |                 |    |  ----> U                 
+    ##           | F6 |    F3(front)    | F4 |
+    ##           |    |                 |    |
+    ##           |    |4                |    |
+    ##           |   .'.................|....' 3
+    ##           |  /        F1         | .'
+    ##           `.:....................|'
+    ##           1                      2
+    ##                                  
     # FROM CALCULIX MANUAL... (RIGHT HAND NORMALS POINT IN)
     #  face 1: 1-2-3-4 -> FTAGS.MIN_W - 1
     #  face 2: 5-8-7-6 -> FTAGS.MAX_W - 2
@@ -175,7 +176,39 @@ def define_model(self) :
     blk_a.define_block_from_faces(f1, f2, f3, f4_L, f5, f6)
 
 
-    #self.plot_blocks()
+    ## p1 = point(lox + offx, loy + offy, loz + offz, common_params)
+    ## p2 = point(hix + offx, loy + offy, loz + offz, common_params)
+    ## p3 = point(hix + offx, hiy + offy, loz + offz, common_params)
+    ## p4 = point(lox + offx, hiy + offy, loz + offz, common_params)
+    ## p5 = point(lox + offx, loy + offy, hiz + offz, common_params)
+    ## p6 = point(hix + offx, loy + offy, hiz + offz, common_params)
+    ## p7 = point(hix + offx, hiy + offy, hiz + offz, common_params)
+    ## p8 = point(lox + offx, hiy + offy, hiz + offz, common_params)
+
+    
+    p26_l = point(hix + offx, loy + offy, (loz+hiz)/2.0 + offz, common_params)
+    p37_l = point(hix + offx, hiy + offy, (loz+hiz)/2.0 + offz, common_params)
+    p26_u = point(hix + offx, loy + offy, 6.0 + offz, common_params)
+    p37_u = point(hix + offx, hiy + offy, 6.0 + offz, common_params)
+
+
+    p26_l.set_param('PRES', 10000)
+    p26_l.set_param('THICK', 0.25)
+    p37_l.set_param('PRES', -10000)
+    p37_l.set_param('THICK', 0.5)
+
+
+    bname = 'B'
+    blk_b = self.add_block(bname)
+    blk_b.set_material(mat)
+    blk_b.define_block_from_mid_plane_points(p37_l, p37_u, p26_u, p26_l)
+
+
+
+
+
+
+    self.plot_blocks()
 
 
     # BLOCK :  +/- 1 parametric CUBE CENTERED AT ZERO
@@ -188,54 +221,74 @@ def define_model(self) :
     
 
     #                              NAME,  BLOCK,   GRID_TAG
-    self.add_rigid_join('XRA', blk_x, GTAGS.MIN_W,
-                             blk_a, GTAGS.MIN_U) 
-
-#    self.add_butt_join('XA', blk_x, GTAGS.MIN_W,
-#                              blk_a, GTAGS.MIN_U) 
+    #self.add_rigid_join('XRA', blk_x, GTAGS.MIN_W,
+    #                         blk_a, GTAGS.MIN_U) 
 
     #                              BLOCK,   GRID_TAG,    HINGE_AXIS_DIR
-    #self.add_hinge_join('AHB', ms['A'], GTAGS.MIN_U, DIR.V,
-    #                               ms['B'], GTAGS.MIN_V, DIR.U) 
+    self.add_hinge_join('XHA', blk_x, GTAGS.MIN_W, DIR.V,
+                        blk_a, GTAGS.MIN_U, DIR.V) 
+
+    self.add_rigid_join('ARB', blk_a, GTAGS.MAX_U,
+                             blk_b, GTAGS.MIN_U) 
+
+#    self.add_butt_join('XBA', blk_x, GTAGS.MIN_W,
+#                              blk_a, GTAGS.MIN_U) 
+
+
 
     # MUST GENERATE THE MESH BEFORE YOU CAN APPLY THE BOUNDARY CONDITIONS
     self.generate_mesh()
 
-    glb = blk_x.get_grid_list_from_tags(GTAGS.MAX_W)
-    glbu = blk_x.get_grid_list_from_tags(GTAGS.CENTER_U, glb)
-    glbv = blk_x.get_grid_list_from_tags(GTAGS.CENTER_V, glb)
+    glx = blk_x.get_grid_list_from_tags(GTAGS.MAX_W)
+    #glbu = blk_x.get_grid_list_from_tags(GTAGS.CENTER_U, glb)
+    #glbv = blk_x.get_grid_list_from_tags(GTAGS.CENTER_V, glb)
 
-    
 
     # FIX FACE IN W DIRECTION
-    print 'FACE POINTS...'
-    for g in glb :
-        print g.id
+    #print 'FACE POINTS...'
+    for g in glx :
+        #print g.id
         g.bc.add(DOF.DZ)
-    pass
-
-    # SYMMETRY ABOUT X AXIS
-    print 'X SYM POINTS...'
-    for g in glbu :
-        print g.id
+        g.bc.add(DOF.DY)
         g.bc.add(DOF.DX)
     pass
 
-    # SYMMETRY ABOUT Y AXIS
-    print 'Y SYM POINTS...'
-    for g in glbv :
-        print g.id
+
+    glb = blk_b.get_grid_list_from_tags(GTAGS.MAX_U)
+    for g in glb :
+        #print g.id
+        g.bc.add(DOF.DZ)
         g.bc.add(DOF.DY)
+        g.bc.add(DOF.DX)
     pass
+
+
+
+
+    ## # SYMMETRY ABOUT X AXIS
+    ## #print 'X SYM POINTS...'
+    ## for g in glbu :
+    ##     print g.id
+    ##     g.bc.add(DOF.DX)
+    ## pass
+
+    ## # SYMMETRY ABOUT Y AXIS
+    ## #print 'Y SYM POINTS...'
+    ## for g in glbv :
+    ##     print g.id
+    ##     g.bc.add(DOF.DY)
+    ## pass
 
 
 
     
     print ' *** M O D E L   B U I L D   D O N E *** '
 
+    #sys.exit(-1)
 pass
 
 #####################################################################
+
 
 anal.analyze(define_model)
 

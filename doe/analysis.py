@@ -67,7 +67,7 @@ class analysis(object) :
     # http://stackoverflow.com/questions/2484215/how-do-i-override-a-parent-classs-functions-in-python
     # http://stackoverflow.com/questions/972/adding-a-method-to-an-existing-object
     def set_model_def(self) :
-        print '>>> TOP >>> ', here()
+        #print '>>> TOP >>> ', here()
         #self.model.build_model = new.instancemethod(md_func, self.model, self.model.__class__)
         self.model.build_model = types.MethodType(self.model_def_function, self.model)
     pass
@@ -75,7 +75,7 @@ class analysis(object) :
     #----------------------------------------------------------------------------------------------------
 
     def add_indep_var(self, ivname, values) :
-        print '>>> TOP >>> ', here()
+        #print '>>> TOP >>> ', here()
         self.doe.add_indep_var(ivname, values)
     pass
 
@@ -87,7 +87,7 @@ class analysis(object) :
         if( current_vals is None ) :
             rc = -1
         pass
-        print 'CURRENT VALS = ', current_vals
+        #print 'CURRENT VALS = ', current_vals
         #self.doe_sum[self.analysis_count] = current_vals       
         return(rc)
     pass
@@ -110,7 +110,7 @@ class analysis(object) :
         self.analysis_count = 1
         rc = self.update_vars()
         while( rc == 0 ) :
-            print 'ANALYSIS COUNT = ', self.analysis_count
+            #print 'ANALYSIS COUNT = ', self.analysis_count
 
             #self.model.__init__()
             del self.model

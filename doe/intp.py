@@ -48,3 +48,32 @@ v = [ 1, 2, 3 ]
 
 print type(v)
 print isinstance(v, list)
+
+n=-1
+p=1
+
+e = {}
+
+e[n,n,n,p,n,n] = '1_to_2'
+e[p,n,n,p,p,n] = '2_to_3'
+e[n,n,n,n,p,n] = '1_to_4'
+e[n,p,n,p,p,n] = '4_to_1'
+
+pto = [ (None, None, None),
+        (n, n, n),
+        (p, n, n),
+        (p, p, n),
+        (n, p, n),
+        (n, n, p),
+        (p, n, p),
+        (p, p, p),
+        (n, p, p) ]
+
+
+tt23 = ( pto[2] + pto[3] )
+print tt23
+print 'E23 =', e[tt23]
+print 'E23 =', e[pto[2] + pto[3]]
+print 'E23 =', e[ ( pto[2] + pto[3] ) ]
+
+

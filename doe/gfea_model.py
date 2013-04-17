@@ -617,8 +617,8 @@ class mesh(object) :
         
         b = self.block
         b.ng = b.ne * 2 + 1
-        print 'NG =', b.ng
-        print 'NE =', b.ne
+        #print 'NG =', b.ng
+        #print 'NE =', b.ne
 
 
 
@@ -1381,7 +1381,7 @@ class join(object) :
     #----------------------------------------------------------------------------------------------------
     # ASSOCIATE FACES BASED ON JOIN TYPE
     def sew(self) :
-        print '>>> TOP >>> ', here()
+        #print '>>> TOP >>> ', here()
 
         ma = self.jface_a.block.mesh
         mb = self.jface_b.block.mesh
@@ -1395,24 +1395,24 @@ class join(object) :
         self.jface_a.face_gl = ma.get_grid_list_from_tags(self.jface_a.face_grid_tag)
         self.jface_b.face_gl = mb.get_grid_list_from_tags(self.jface_b.face_grid_tag)
         
-        print '_'*80
-        print 'A FACE GRIDS:', self.jface_a.face_grid_tag, self.jface_a.name
-        c = -1
-        for ag in self.jface_a.face_gl :
-          c += 1
-          print c, ag
-        pass
+        #print '_'*80
+        #print 'A FACE GRIDS:', self.jface_a.face_grid_tag, self.jface_a.name
+        #c = -1
+        #for ag in self.jface_a.face_gl :
+        #  c += 1
+        #  print c, ag
+        #pass
     
-        print
+        #print
         
-        print 'B FACE GRIDS:', self.jface_b.face_grid_tag, self.jface_b.name
-        c = -1
-        for bg in self.jface_b.face_gl :
-          c += 1
-          print c, bg
-        pass
+        #print 'B FACE GRIDS:', self.jface_b.face_grid_tag, self.jface_b.name
+        #c = -1
+        #for bg in self.jface_b.face_gl :
+        #  c += 1
+        #  print c, bg
+        #pass
 
-        print '_'*80
+        #print '_'*80
 
 
 
@@ -1434,7 +1434,7 @@ class join(object) :
 ##
 
         if( self.type == JTAGS.HINGE ) :
-            print 'HINGE JOIN'
+            #print 'HINGE JOIN'
 
             a_ortho_grid_tag = -1
             b_ortho_grid_tag = -1
@@ -1502,7 +1502,7 @@ class join(object) :
 
 
         if( self.type == JTAGS.BUTT ) :
-            print 'BUTT JOIN'
+            #print 'BUTT JOIN'
             
             for g in self.jface_a.face_gl : 
                 g.tags |= GTAGS.BUTT_FACE
@@ -1515,8 +1515,8 @@ class join(object) :
             self.jface_a.get_face_lines()
             self.jface_b.get_face_lines()
 
-            print 'jface_a.face_gl LENGTH =', len(self.jface_a.face_gl)
-            print 'jface_b.face_gl LENGTH =', len(self.jface_b.face_gl)
+            #print 'jface_a.face_gl LENGTH =', len(self.jface_a.face_gl)
+            #print 'jface_b.face_gl LENGTH =', len(self.jface_b.face_gl)
             
             # SET THE SLAVE FACE TO BE THE ONE WITH THE MOST GRID POINTS ON THE FACE
             if( len(self.jface_a.face_gl) >= len(self.jface_b.face_gl) ) :
@@ -1538,7 +1538,7 @@ class join(object) :
 
 
         if( self.type == JTAGS.RIGID ) :
-            print 'RIGID JOIN'
+            #print 'RIGID JOIN'
 
             for g in self.jface_a.face_gl : 
                 g.tags |= GTAGS.RIGID_FACE
@@ -1568,45 +1568,45 @@ class join(object) :
 
 
     
-        print 'SLAVE GRIDS...'
+        #print 'SLAVE GRIDS...'
         self.slave.face_el.clear()
         for sg in self.slave.face_gl :
             sg.tags |= GTAGS.JOIN_SLAVE
-            print sg
+            #print sg
             eel = list(sg.el)
             for e in eel :
-                print '   USES ELEMENT ', e
+                #print '   USES ELEMENT ', e
                 self.slave.face_el.add(e)
             pass
         pass
 
-        print 'MASTER GRIDS...'
+        #print 'MASTER GRIDS...'
         self.master.face_el.clear()
         for mg in self.master.face_gl :
             mg.tags |= GTAGS.JOIN_MASTER
-            print mg
+            #print mg
             eel = list(mg.el)
             for e in eel :
-                print '   USES ELEMENT ', e
+                #print '   USES ELEMENT ', e
                 self.master.face_el.add(e)
             pass
         pass
 
 
-        print 'SLAVE elements...'
-        tel = list(self.slave.face_el)
-        tel.sort(  key = lambda e : e.id )
-        for e in tel :
-            print 'SLAVE ELEMENT # ', e.id
-        pass
+        #print 'SLAVE elements...'
+        #tel = list(self.slave.face_el)
+        #tel.sort(  key = lambda e : e.id )
+        #for e in tel :
+        #    print 'SLAVE ELEMENT # ', e.id
+        #pass
 
 
-        print 'MASTER elements...'
-        tel = list(self.master.face_el)
-        tel.sort(  key = lambda e : e.id )
-        for e in tel :
-            print 'MASTER ELEMENT # ', e.id
-        pass
+        #print 'MASTER elements...'
+        #tel = list(self.master.face_el)
+        #tel.sort(  key = lambda e : e.id )
+        #for e in tel :
+        #    print 'MASTER ELEMENT # ', e.id
+        #pass
 
         
     pass
@@ -1677,8 +1677,8 @@ class model(object) :
         pass
        
 
-        print 'MAXS =', maxs
-        print 'MINS =', mins
+        #print 'MAXS =', maxs
+        #print 'MINS =', mins
         
         ax.legend()
 
@@ -2308,7 +2308,11 @@ class model(object) :
         if( matp.props['SU'] > 0.0 ) :
             
             # AVERAGE - REALLY THE MINIMUM OF THE AVERAGE - Not much use really
-            mosu = matp.props['SU'] / ( g.avg_results['VM'] * self.safety_factor_ultimate ) - 1.0
+            if(  g.avg_results['VM'] > constants.TOL ) :
+                mosu = matp.props['SU'] / ( g.avg_results['VM'] * self.safety_factor_ultimate ) - 1.0
+            else :
+                mosu = constants.BIG_REAL
+            pass
             update = True
             #print 'AVG MOSU = ', mosu, 'VM = ', g.avg_results['VM']
             # KEEP THE SMALLEST MOS FOR EACH GRID - ITS THE ONE THAT CONTROLS
@@ -2324,8 +2328,17 @@ class model(object) :
             pass
 
             # MAX STRESS WILL GIVE THE MINIMUM MOS
-            mosu_mins = matp.props['SU'] / ( g.min_results['VM'] * self.safety_factor_ultimate ) - 1.0
-            mosu_maxs = matp.props['SU'] / ( g.max_results['VM'] * self.safety_factor_ultimate ) - 1.0
+            if( g.min_results['VM']  > constants.TOL ) :
+                mosu_mins = matp.props['SU'] / ( g.min_results['VM'] * self.safety_factor_ultimate ) - 1.0
+            else :
+                mosu_mins = constants.BIG_REAL
+            pass
+        
+            if( g.max_results['VM']  > constants.TOL ) :
+                mosu_maxs = matp.props['SU'] / ( g.max_results['VM'] * self.safety_factor_ultimate ) - 1.0
+            else :
+                mosu_maxs = constants.BIG_REAL
+            pass
             
             # MIN
             mosu = min(mosu_mins, mosu_maxs)
@@ -2364,7 +2377,12 @@ class model(object) :
         if( matp.props['SY'] > 0.0 ) :
             
             # AVERAGE - REALLY THE MINIMUM OF THE AVERAGE
-            mosy = matp.props['SY'] / ( g.avg_results['VM'] * self.safety_factor_yield ) - 1.0
+            if( g.avg_results['VM']  > constants.TOL ) :
+                mosy = matp.props['SY'] / ( g.avg_results['VM'] * self.safety_factor_yield ) - 1.0
+            else :
+                mosy = constants.BIG_REAL
+            pass
+        
             update = True
             # KEEP THE SMALLEST MOS FOR EACH GRID - ITS THE ONE THAT CONTROLS
             if( 'MOSY' in g.avg_results ) :
@@ -2379,9 +2397,17 @@ class model(object) :
             pass
 
             # MAX STRESS WILL GIVE THE MINIMUM MOS
-            mosy_mins = matp.props['SY'] / ( g.min_results['VM'] * self.safety_factor_yield ) - 1.0
-            mosy_maxs = matp.props['SY'] / ( g.max_results['VM'] * self.safety_factor_yield ) - 1.0
-  
+            if( g.min_results['VM']  > constants.TOL ) :
+                mosy_mins = matp.props['SY'] / ( g.min_results['VM'] * self.safety_factor_yield ) - 1.0
+            else :
+                mosy_mins = constants.BIG_REAL
+            pass
+        
+            if( g.max_results['VM']  > constants.TOL ) :
+                mosy_maxs = matp.props['SY'] / ( g.max_results['VM'] * self.safety_factor_yield ) - 1.0
+            else :
+                mosy_maxs = constants.BIG_REAL
+            pass
         
             # MIN
             mosy = min(mosy_mins, mosy_maxs)
@@ -2423,7 +2449,7 @@ class model(object) :
     def stitch(self) :
                           
         for j in self.joins :
-            print 'JOIN : ', j
+            #print 'JOIN : ', j
             j.sew()
         pass
     pass
@@ -2431,7 +2457,7 @@ class model(object) :
     #----------------------------------------------------------------------------------------------------
 
     def save_abq(self, fname) :
-        print '>>> TOP >>> ', here()
+        #print '>>> TOP >>> ', here()
 
         face_tags = [ FTAGS.MAX_U, FTAGS.MIN_U, FTAGS.MAX_V, FTAGS.MIN_V, FTAGS.MAX_W, FTAGS.MIN_W ]
         face_tags_exploded = [ FTAGS.MAX_W, FTAGS.MIN_W ]
@@ -2786,7 +2812,7 @@ class model(object) :
         vl = [None] * 3 # WORKING VECTOR LIST
 
 
-        print 'WRITE PRESSURE'
+        #print 'WRITE PRESSURE'
         for b in self.blocks :
             m = b.mesh
             # IF THIS IS AN EXPLODED BLOCK ONLY PUT PRESSURES ON THE +/- W FACES
@@ -2804,9 +2830,9 @@ class model(object) :
             #print 'FACE_TAGS =', face_tags
             
             for ft in face_tags :
-                print 'FACETAG = ', ft
+                #print 'FACETAG = ', ft
                 face_num = constants.FACE_NUM(ft)
-                print 'LOOKING AT FACENUM = ', face_num
+                #print 'LOOKING AT FACENUM = ', face_num
 
                 ftel = filter( ( lambda ee : ee.tags & ft ), tel )
                 #ftel.sort(  key = lambda e : e.id )
@@ -2874,10 +2900,10 @@ class model(object) :
                 #print 'fpp pressure = ',  fpp.get_param('PRES', 0.0)
 
                 psum = 0.0
-                psum += fnn.get_param('PRES', 0.0)
-                psum += fpn.get_param('PRES', 0.0)
-                psum += fnp.get_param('PRES', 0.0)
-                psum += fpp.get_param('PRES', 0.0)
+                psum += abs(fnn.get_param('PRES', 0.0))
+                psum += abs(fpn.get_param('PRES', 0.0))
+                psum += abs(fnp.get_param('PRES', 0.0))
+                psum += abs(fpp.get_param('PRES', 0.0))
                 psum = psum / 4.0
                 if( abs(psum) < constants.TOL ) : continue
 
@@ -2917,15 +2943,15 @@ class model(object) :
                 # ARE ALWAYS MEASURED FROM THE MINIMUM PARAMETER PLANE
                 
                 for e in ftel :
-                    print 'LOOKING AT ELEMENT =', e
+                    #print 'LOOKING AT ELEMENT =', e
 
                     face_pressure = 0.0
                     # AVERAGE PRESSURE FOR ALL GRIDS ON THE ELEMENT FACE
                     for i in fgi :
-                        print 'FACE GRID INDEX=',i
+                        #print 'FACE GRID INDEX=',i
                         g = e.gl[i-1]
-                        print 'LOOKING AT ELEMENT FACE GRID -=>', g
-                        print 'G.NORM_UVW =', g.norm_uvw
+                        #print 'LOOKING AT ELEMENT FACE GRID -=>', g
+                        #print 'G.NORM_UVW =', g.norm_uvw
                         
                         # WE DON'T ACTUALLY USE THE MESH GRID'S PRESSURE VALUE
                         # BUT SAMPLE THE PRESSURE OFF THE BLOCK FACE AT THE SAME
@@ -2937,8 +2963,8 @@ class model(object) :
                         
                         scale_factor_1 = g.norm_uvw[ interp_dirs[0] ]
                         scale_factor_2 = g.norm_uvw[ interp_dirs[1] ]
-                        print 'SCALE FACTOR 1 =', scale_factor_1
-                        print 'SCALE FACTOR 2 =', scale_factor_2
+                        #print 'SCALE FACTOR 1 =', scale_factor_1
+                        #print 'SCALE FACTOR 2 =', scale_factor_2
                         pl0 = vl[0].point_from_scale( scale_factor_1 )
                         pl1 = vl[1].point_from_scale( scale_factor_1 )
                         vl[2] = vector(pl0, pl1)
@@ -2978,10 +3004,11 @@ class model(object) :
                         pass
 
                     pass
+                    
                     if( abs(face_pressure) < constants.TOL ) : continue
                     s = str(e.id) + ', P' + str(face_num) + ', ' + str(face_pressure) + '\n'
                     fp.write(s)
-                    print s
+                    #print s
 
                 pass
             pass
