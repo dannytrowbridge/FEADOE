@@ -25,6 +25,25 @@ from ggen_sup import point, vector, face, block
 
 ##########################################################################################################
 
+def to_list(v) :
+    if( v is not None ) :
+        if( not isinstance(v, list) ) :
+            if( isinstance(ll, tuple) ) :
+                ll = list(ll)
+            else :
+                ll = [ ll ]
+            pass
+        pass
+    else :
+        v = []
+    pass
+
+    return(v)
+pass
+        
+
+##########################################################################################################
+
 def write_list_csv(fp, nn, per_line) :
     lnn = len(nn)
     tc = 0
@@ -1143,11 +1162,16 @@ class join_face(object) :
         self.face_grid_tag = ref_block_tag
         self.hinge_dir = None
 
+        self.grid_omit_tags = []
+
         self.face_el = set()
 
         
         # GRID LIST OF GRIDS ON HINGE LINE - FOUND NO MATTER WHAT KIND OF JOIN IT IS
+        self.main_grid_line_tag = -1
         self.gl = []
+        
+        self.ortho_grid_line_tag = -1
         self.ortho_gl = []
         
         # GRID LIST OF GRIDS ON JOIN FACE - FOUND NO MATTER WHAT KIND OF JOIN IT IS
@@ -1161,6 +1185,7 @@ class join_face(object) :
     pass
 
     #----------------------------------------------------------------------------------------------------
+
     # THIS IS CALLED BY __init__
     def get_face_directions(self) :
         self.face_dirs = [-1, -1]
@@ -1179,32 +1204,40 @@ class join_face(object) :
     pass
 
     #----------------------------------------------------------------------------------------------------
-    # WE REALLY DON'T NEED THIS
+    # OMIT GRIDS FROM FACE THAT THE USER SPECIFIES
+    def apply_omit_tags_to_face_grids(self) :
+        for got in self.grid_omit_tags :
+            self.face_gl = self.block.get_grid_list_from_not_tags(got, self.face_gl)
+        pass
+    pass
+
+    #----------------------------------------------------------------------------------------------------
+    # DEFAULT LINES - CENTER OF JOIN PLANE
     def get_face_lines(self) :
         if( self.face_dirs[1] == DIR.U ) :
-            main_grid_line_tag = GTAGS.MIN_U
+            self.main_grid_line_tag = GTAGS.CENTER_U
         pass
         if( self.face_dirs[1] == DIR.V ) :
-            main_grid_line_tag = GTAGS.MIN_V
+            self.main_grid_line_tag = GTAGS.CENTER_V
         pass
         if( self.face_dirs[1] == DIR.W ) :
-            main_grid_line_tag = GTAGS.MIN_W
+            self.main_grid_line_tag = GTAGS.CENTER_W
         pass
         if( self.face_dirs[0] == DIR.U ) :
-            ortho_grid_line_tag = GTAGS.MIN_U
+            self.ortho_grid_line_tag = GTAGS.CENTER_U
         pass
         if( self.face_dirs[0] == DIR.V ) :
-            ortho_grid_line_tag = GTAGS.MIN_V
+            self.ortho_grid_line_tag = GTAGS.CENTER_V
         pass
         if( self.face_dirs[0] == DIR.W ) :
-            ortho_grid_line_tag = GTAGS.MIN_W
+            self.ortho_grid_line_tag = GTAGS.CENTER_W
         pass
 
         ma = self.block.mesh
-        self.gl = ma.get_grid_list_from_tags(main_grid_line_tag,
+        self.gl = ma.get_grid_list_from_tags(self.main_grid_line_tag,
                                              self.face_gl)
             
-        self.ortho_gl =  ma.get_grid_list_from_tags(ortho_grid_line_tag,
+        self.ortho_gl =  ma.get_grid_list_from_tags(self.ortho_grid_line_tag,
                                                     self.face_gl)
     pass
 
@@ -1274,89 +1307,89 @@ class join(object) :
 
         hinge_grid_tag = -1
         ortho_grid_tag = -1
-        ortho_grid_select_tag = -1
+        #ortho_grid_select_tag = -1
 
         # TBD - SHOULD SEE IF WE CAN "AND" THE ORTHO GRID TAGS  - SHOULD SPEED THINGS US 
         
         if( block_face_grid_tag == GTAGS.MIN_U  ) :
             if( hinge_dir_tag == DIR.V ) :
                 hinge_grid_tag = GTAGS.CENTER_W
-                ortho_grid_tag = GTAGS.MIN_V
-                ortho_grid_select_tag = GTAGS.MIN_W
+                ortho_grid_tag = GTAGS.CENTER_V
+                #ortho_grid_select_tag = GTAGS.MIN_W
             pass
             if( hinge_dir_tag == DIR.W ) :
                 hinge_grid_tag = GTAGS.CENTER_V
-                ortho_grid_tag = GTAGS.MIN_W
-                ortho_grid_select_tag = GTAGS.MAX_V
+                ortho_grid_tag = GTAGS.CENTER_W
+                #ortho_grid_select_tag = GTAGS.MAX_V
             pass
         pass
     
         if( block_face_grid_tag == GTAGS.MAX_U ) :
             if( hinge_dir_tag == DIR.V ) :
                 hinge_grid_tag = GTAGS.CENTER_W
-                ortho_grid_tag = GTAGS.MIN_V
-                ortho_grid_select_tag = GTAGS.MAX_W
+                ortho_grid_tag = GTAGS.CENTER_V
+                #ortho_grid_select_tag = GTAGS.MAX_W
             pass
             if( hinge_dir_tag == DIR.W ) :
                 hinge_grid_tag = GTAGS.CENTER_V
-                ortho_grid_tag = GTAGS.MIN_W
-                ortho_grid_select_tag = GTAGS.MIN_V
+                ortho_grid_tag = GTAGS.CENTER_W
+                #ortho_grid_select_tag = GTAGS.MIN_V
             pass
         pass
     
         if( block_face_grid_tag == GTAGS.MIN_V ) :
             if( hinge_dir_tag == DIR.U ) :
                 hinge_grid_tag = GTAGS.CENTER_W
-                ortho_grid_tag = GTAGS.MIN_U
-                ortho_grid_select_tag = GTAGS.MAX_W
+                ortho_grid_tag = GTAGS.CENTER_U
+                #ortho_grid_select_tag = GTAGS.MAX_W
             pass
             if( hinge_dir_tag == DIR.W ) :
                 hinge_grid_tag = GTAGS.CENTER_U
-                ortho_grid_tag = GTAGS.MIN_W
-                ortho_grid_select_tag = GTAGS.MIN_U
+                ortho_grid_tag = GTAGS.CENTER_W
+                #ortho_grid_select_tag = GTAGS.MIN_U
             pass
         pass
     
         if( block_face_grid_tag == GTAGS.MAX_V ) :
             if( hinge_dir_tag == DIR.U ) :
                 hinge_grid_tag = GTAGS.CENTER_W
-                ortho_grid_tag = GTAGS.MIN_U
-                ortho_grid_select_tag = GTAGS.MIN_W
+                ortho_grid_tag = GTAGS.CENTER_U
+                #ortho_grid_select_tag = GTAGS.MIN_W
             pass
             if( hinge_dir_tag == DIR.W ) :
                 hinge_grid_tag = GTAGS.CENTER_U
-                ortho_grid_tag = GTAGS.MIN_W
-                ortho_grid_select_tag = GTAGS.MAX_U
+                ortho_grid_tag = GTAGS.CENTER_W
+                #ortho_grid_select_tag = GTAGS.MAX_U
             pass
         pass
     
         if( block_face_grid_tag == GTAGS.MIN_W ) :
             if( hinge_dir_tag == DIR.U ) :
                 hinge_grid_tag = GTAGS.CENTER_V
-                ortho_grid_tag = GTAGS.MIN_U
-                ortho_grid_select_tag = GTAGS.MIN_V
+                ortho_grid_tag = GTAGS.CENTER_U
+                #ortho_grid_select_tag = GTAGS.MIN_V
             pass
             if( hinge_dir_tag == DIR.V ) :
                 hinge_grid_tag = GTAGS.CENTER_U
-                ortho_grid_tag = GTAGS.MIN_V
-                ortho_grid_select_tag = GTAGS.MAX_U
+                ortho_grid_tag = GTAGS.CENTER_V
+                #ortho_grid_select_tag = GTAGS.MAX_U
             pass
         pass
     
         if( block_face_grid_tag == GTAGS.MAX_W ) :
             if( hinge_dir_tag == DIR.U ) :
                 hinge_grid_tag = GTAGS.CENTER_V
-                ortho_grid_tag = +GTAGS.MIN_U
-                ortho_grid_select_tag = GTAGS.MAX_V
+                ortho_grid_tag = GTAGS.CENTER_U
+                #ortho_grid_select_tag = GTAGS.MAX_V
             pass
             if( hinge_dir_tag == DIR.V ) :
                 hinge_grid_tag = GTAGS.CENTER_U
-                ortho_grid_tag = -GTAGS.MIN_V
-                ortho_grid_select_tag = GTAGS.MIN_U
+                ortho_grid_tag = GTAGS.CENTER_V
+                #ortho_grid_select_tag = GTAGS.MIN_U
             pass
         pass
     
-        return(hinge_grid_tag, ortho_grid_tag, ortho_grid_select_tag)
+        return(hinge_grid_tag, ortho_grid_tag)
     pass
 
 
@@ -1394,6 +1427,9 @@ class join(object) :
 
         self.jface_a.face_gl = ma.get_grid_list_from_tags(self.jface_a.face_grid_tag)
         self.jface_b.face_gl = mb.get_grid_list_from_tags(self.jface_b.face_grid_tag)
+
+        self.jface_a.apply_omit_tags_to_face_grids()
+        self.jface_b.apply_omit_tags_to_face_grids()
         
         #print '_'*80
         #print 'A FACE GRIDS:', self.jface_a.face_grid_tag, self.jface_a.name
@@ -1438,13 +1474,13 @@ class join(object) :
 
             a_ortho_grid_tag = -1
             b_ortho_grid_tag = -1
-            a_ortho_grid_select_tag = -1
-            b_ortho_grid_select_tag = -1
         
 
+            #self.jface_a.apply_omit_tags_to_face_grids()
+            #self.jface_b.apply_omit_tags_to_face_grids()
         
-            a_hinge_grid_tag, a_ortho_grid_tag, a_ortho_grid_select_tag = join.get_face_hinge_line_tags(self.jface_a.face_grid_tag,
-                                                                                                        self.jface_a.hinge_dir)
+            a_hinge_grid_tag, a_ortho_grid_tag = join.get_face_hinge_line_tags(self.jface_a.face_grid_tag,
+                                                                               self.jface_a.hinge_dir)
             self.jface_a.gl = ma.get_grid_list_from_tags(a_hinge_grid_tag,
                                                          self.jface_a.face_gl)
             
@@ -1452,13 +1488,16 @@ class join(object) :
                                                                 self.jface_a.face_gl)
                                                                 
 
-            b_hinge_grid_tag, b_ortho_grid_tag, b_ortho_grid_select_tag = join.get_face_hinge_line_tags(self.jface_b.face_grid_tag,
-                                                                                                        self.jface_b.hinge_dir)
+            b_hinge_grid_tag, b_ortho_grid_tag = join.get_face_hinge_line_tags(self.jface_b.face_grid_tag,
+                                                                               self.jface_b.hinge_dir)
             self.jface_b.gl = mb.get_grid_list_from_tags(b_hinge_grid_tag,
                                                          self.jface_b.face_gl)
             
             self.jface_b.ortho_gl =  ma.get_grid_list_from_tags(b_ortho_grid_tag,
                                                                 self.jface_b.face_gl)
+
+
+
 
             for g in self.jface_a.face_gl : 
                 g.tags |= GTAGS.HINGED_FACE
@@ -1504,6 +1543,13 @@ class join(object) :
         if( self.type == JTAGS.BUTT ) :
             #print 'BUTT JOIN'
             
+        
+            #self.jface_a.apply_omit_tags_to_face_grids()
+            #self.jface_b.apply_omit_tags_to_face_grids()
+
+            self.jface_a.get_face_lines()
+            self.jface_b.get_face_lines()
+
             for g in self.jface_a.face_gl : 
                 g.tags |= GTAGS.BUTT_FACE
             pass
@@ -1511,9 +1557,6 @@ class join(object) :
             for g in self.jface_b.face_gl : 
                 g.tags |= GTAGS.BUTT_FACE
             pass
-        
-            self.jface_a.get_face_lines()
-            self.jface_b.get_face_lines()
 
             #print 'jface_a.face_gl LENGTH =', len(self.jface_a.face_gl)
             #print 'jface_b.face_gl LENGTH =', len(self.jface_b.face_gl)
@@ -1531,6 +1574,7 @@ class join(object) :
             
         pass # END JTAGS.BUTT
 
+
 ##    ___  ________________
 ##   / _ \/  _/ ___/  _/ _ \
 ##  / , _// // (_ // // // /
@@ -1540,6 +1584,12 @@ class join(object) :
         if( self.type == JTAGS.RIGID ) :
             #print 'RIGID JOIN'
 
+            #self.jface_a.apply_omit_tags_to_face_grids()
+            #self.jface_b.apply_omit_tags_to_face_grids()
+
+            self.jface_a.get_face_lines()
+            self.jface_b.get_face_lines()
+
             for g in self.jface_a.face_gl : 
                 g.tags |= GTAGS.RIGID_FACE
             pass
@@ -1547,10 +1597,6 @@ class join(object) :
             for g in self.jface_b.face_gl : 
                 g.tags |= GTAGS.RIGID_FACE
             pass
-
-            self.jface_a.get_face_lines()
-            self.jface_b.get_face_lines()
-
 
             # SET THE SLAVE FACE TO BE THE ONE WITH THE MOST GRID POINTS ON THE FACE
             if( len(self.jface_a.face_gl) >= len(self.jface_b.face_gl) ) :
@@ -1749,10 +1795,25 @@ class model(object) :
 
     #----------------------------------------------------------------------------------------------------
 
-    def add_hinge_join(self, jname, ba, ba_face_grid_tag, ba_hinge_dir, bb, bb_face_grid_tag, bb_hinge_dir) :
+    def add_hinge_join(self, jname, ba, ba_face_grid_tag, ba_hinge_dir,
+                       bb, bb_face_grid_tag, bb_hinge_dir) :
         j = join(jname, ba, ba_face_grid_tag, bb, bb_face_grid_tag, JTAGS.HINGE, self)
         j.set_a_hinge_direction(ba_hinge_dir)
         j.set_b_hinge_direction(bb_hinge_dir)
+        self.joins.append(j)
+        return(j)
+    pass
+
+    #----------------------------------------------------------------------------------------------------
+
+    def add_hinge_join_with_grid_omit_tags(self, jname, ba, ba_face_grid_tag, ba_hinge_dir, ba_face_grid_omit_tags,
+                                           bb, bb_face_grid_tag, bb_hinge_dir, bb_face_grid_omit_tags) :
+        j = join(jname, ba, ba_face_grid_tag, bb, bb_face_grid_tag, JTAGS.HINGE, self)
+        j.set_a_hinge_direction(ba_hinge_dir)
+        j.set_b_hinge_direction(bb_hinge_dir)
+
+        j.jface_a.grid_omit_tags = to_list(ba_face_grid_omit_tags)
+        j.jface_b.grid_omit_tags = to_list(bb_face_grid_omit_tags)
         self.joins.append(j)
         return(j)
     pass
@@ -1769,10 +1830,38 @@ class model(object) :
 
     #----------------------------------------------------------------------------------------------------
 
+    def add_butt_join_with_grid_omit_tags(self, jname, ba, ba_face_grid_tag, ba_face_grid_omit_tags,
+                                bb, bb_face_grid_tag, bb_face_grid_omit_tags ) :
+        j = join(jname, ba, ba_face_grid_tag, bb, bb_face_grid_tag, JTAGS.BUTT, self)
+        j.set_a_hinge_direction(None)
+        j.set_b_hinge_direction(None)
+
+        j.jface_a.grid_omit_tags = to_list(ba_face_grid_omit_tags)
+        j.jface_b.grid_omit_tags = to_list(bb_face_grid_omit_tags)
+        self.joins.append(j)
+        return(j)
+    pass
+
+    #----------------------------------------------------------------------------------------------------
+
     def add_rigid_join(self, jname, ba, ba_face_grid_tag, bb, bb_face_grid_tag ) :
         j = join(jname, ba, ba_face_grid_tag, bb, bb_face_grid_tag, JTAGS.RIGID, self)
         j.set_a_hinge_direction(None)
         j.set_b_hinge_direction(None)
+        self.joins.append(j)
+        return(j)
+    pass
+    
+    #----------------------------------------------------------------------------------------------------
+
+    def add_rigid_join_with_grid_omit_tags(self, jname, ba, ba_face_grid_tag, ba_face_grid_omit_tags,
+                                 bb, bb_face_grid_tag, bb_face_grid_omit_tags ) :
+        j = join(jname, ba, ba_face_grid_tag, bb, bb_face_grid_tag, JTAGS.RIGID, self)
+        j.set_a_hinge_direction(None)
+        j.set_b_hinge_direction(None)
+
+        j.jface_a.grid_omit_tags = to_list(ba_face_grid_omit_tags)
+        j.jface_b.grid_omit_tags = to_list(bb_face_grid_omit_tags)
         self.joins.append(j)
         return(j)
     pass
@@ -2526,10 +2615,10 @@ class model(object) :
         for b in self.blocks :
             m = b.mesh
             nn.append(m.nset_name)      
-            fp.write('** <BEGIN> ' + '~-~' * 15 + ' ' + m.nset_name  +' NODES\n')
+            fp.write('** <BEGIN> ' + '~-~' * 5 + ' ' + m.nset_name  +' NODES\n')
             fp.write('*NODE, NSET=' + m.nset_name + '\n')
             m.save_abq_grids(fp)
-            fp.write('** <END> ' + '~-~' * 15 + ' ' + m.nset_name  +' NODES\n')
+            fp.write('** <END> ' + '~-~' * 5 + ' ' + m.nset_name  +' NODES\n')
         pass
 
         fp.write('*NSET, NSET=NALL' + '\n')
@@ -2555,9 +2644,9 @@ class model(object) :
 
         for b in self.blocks :
             m = b.mesh
-            fp.write('** <BEGIN> ' + '~-~' * 15 + ' ' + m.eset_name  +' ELEMENTS\n')
+            fp.write('** <BEGIN> ' + '~-~' * 5 + ' ' + m.eset_name  +' ELEMENTS\n')
             m.save_abq_elements(fp)
-            fp.write('** <END> ' + '~-~' * 15 + ' ' + m.eset_name  +' ELEMENTS\n')
+            fp.write('** <END> ' + '~-~' * 5 + ' ' + m.eset_name  +' ELEMENTS\n')
         pass
 
 
@@ -2700,9 +2789,9 @@ class model(object) :
             if( j.type == JTAGS.RIGID ) :
 
                 for jf in j.jfaces :
-                    fp.write('** <BEGIN> ' + '~-~' * 15 + ' ' + jf.name  +' JOIN NODE SET\n')
+                    fp.write('** <BEGIN> ' + '~-~' * 5 + ' ' + jf.name  +' RIGID JOIN NODE SET\n')
                     self.write_nset(fp, jf.name, jf.face_gl)
-                    fp.write('** <END>   ' + '~-~' * 15 + ' ' + jf.name  +' JOIN NODE SET\n')
+                    fp.write('** <END>   ' + '~-~' * 5 + ' ' + jf.name  +' RIGID JOIN NODE SET\n')
                 pass
                 fp.write('*NSET, NSET=' + j.name + '\n')
                 s = ', '.join([ jf.name for jf in j.jfaces ])
@@ -2714,29 +2803,35 @@ class model(object) :
 
             
             if( j.type == JTAGS.BUTT ) :
+                # NOTE: SLAVE SURFACE COULD USE NODE DEF SO WE COULD LEt THE USER REMOVE SOME GRIDS FOR BC's
+                fp.write('** <BEGIN> ' + '~-~' * 5 + ' ' + jfs.name  +' BUTT JOIN SLAVE NODE SET\n')
+                self.write_nset(fp, jfs.name, jfs.face_gl)
+                fp.write('** <END>   ' + '~-~' * 5 + ' ' + jfs.name  +' BUTT JOIN SLAVE NODE SET\n')
 
-                fp.write('** <BEGIN> ' + '~-~' * 5 + ' ' + jfs.name  +' JOIN SLAVE SURFACE\n')
-                fp.write('*SURFACE, NAME=' + jfs.name + 'S, TYPE=ELEMENT\n')
+
+                fp.write('** <BEGIN> ' + '~-~' * 5 + ' ' + jfs.name  +' BUTT JOIN SLAVE SURFACE\n')
+                fp.write('*SURFACE, NAME=' + jfs.name + 'S, TYPE=NODE\n')
+                fp.write(jfs.name + '\n')
                 
-                # FROM CALCULIX MANUAL... face_num
-                #  face 1: 1-2-3-4 -> FTAGS.MIN_W =  1 = GTAGS.MIN_W
-                #  face 2: 5-8-7-6 -> FTAGS.MAX_W =  2 = GTAGS.MAX_W
-                #  face 3: 1-5-6-2 -> FTAGS.MIN_V =  4 = GTAGS.MIN_V
-                #  face 4: 2-6-7-3 -> FTAGS.MAX_U =  8 = GTAGS.MAX_U
-                #  face 5: 3-7-8-4 -> FTAGS.MAX_V = 16 = GTAGS.MAX_V
-                #  face 6: 4-8-5-1 -> FTAGS.MIN_U = 32 = GTAGS.MIN_U
+                ## fp.write('*SURFACE, NAME=' + jfs.name + 'S, TYPE=ELEMENT\n')
+                ## # FROM CALCULIX MANUAL... face_num
+                ## #  face 1: 1-2-3-4 -> FTAGS.MIN_W =  1 = GTAGS.MIN_W
+                ## #  face 2: 5-8-7-6 -> FTAGS.MAX_W =  2 = GTAGS.MAX_W
+                ## #  face 3: 1-5-6-2 -> FTAGS.MIN_V =  4 = GTAGS.MIN_V
+                ## #  face 4: 2-6-7-3 -> FTAGS.MAX_U =  8 = GTAGS.MAX_U
+                ## #  face 5: 3-7-8-4 -> FTAGS.MAX_V = 16 = GTAGS.MAX_V
+                ## #  face 6: 4-8-5-1 -> FTAGS.MIN_U = 32 = GTAGS.MIN_U
+                ## tel = list(jfs.face_el)
+                ## tel.sort(  key = lambda e : e.id )
+                ## face_num = constants.FACE_NUM(jfs.face_grid_tag)
+                ## #face_num = int( ( math.log(jfs.face_grid_tag) / math.log(2.0) ) + 1 )
+                ## for se in tel :
+                ##     fp.write(feq.format(se.id, face_num) + '\n')
+                ## pass
 
-                tel = list(jfs.face_el)
-                tel.sort(  key = lambda e : e.id )
-                face_num = constants.FACE_NUM(jfs.face_grid_tag)
-                #face_num = int( ( math.log(jfs.face_grid_tag) / math.log(2.0) ) + 1 )
-                for se in tel :
-                    fp.write(feq.format(se.id, face_num) + '\n')
-                pass
-
-                fp.write('** <END>   ' + '~-~' * 5 + ' ' + jfs.name  +' JOIN SLAVE SURFACE\n')
+                fp.write('** <END>   ' + '~-~' * 5 + ' ' + jfs.name  +' BUTT JOIN SLAVE SURFACE\n')
             
-                fp.write('** <BEGIN> ' + '~-~' * 5 + ' ' + jfm.name  +' JOIN MASTER SURFACE\n')
+                fp.write('** <BEGIN> ' + '~-~' * 5 + ' ' + jfm.name  +' BUTT JOIN MASTER SURFACE\n')
                 fp.write('*SURFACE, NAME=' + jfm.name + 'S, TYPE=ELEMENT\n')
                 
                 # FROM CALCULIX MANUAL... face_num
@@ -2750,12 +2845,12 @@ class model(object) :
                 tel = list(jfm.face_el)
                 tel.sort(  key = lambda e : e.id )
                 face_num = constants.FACE_NUM(jfm.face_grid_tag)
-                #face_num = int( ( math.log(jfm.face_grid_tag) / math.log(2.0) ) + 1 )
+                
                 for me in tel :
                     fp.write(feq.format(me.id, face_num) + '\n')
                 pass
             
-                fp.write('** <END>   ' + '~-~' * 5 + ' ' + jfm.name  +' JOIN MASTER SURFACE\n')
+                fp.write('** <END>   ' + '~-~' * 5 + ' ' + jfm.name  +' BUTT JOIN MASTER SURFACE\n')
 
 
                 fp.write('*TIE \n')

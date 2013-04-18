@@ -147,14 +147,6 @@ edge_tags = [
 ETAGS = namedtuple('ETAGS',
                    edge_tags, verbose = False)._make( int(2**i) for i in range(len(edge_tags)) )
 
-## face_tags = [
-##     'MAX_U',
-##     'MAX_V',
-##     'MAX_W',
-##     'MIN_U',
-##     'MIN_V',
-##     'MIN_W'
-##     ]
 face_tags = [
     'MIN_W',
     'MAX_W',

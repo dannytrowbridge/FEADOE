@@ -9,7 +9,7 @@ import math
 import copy
 
 anal = doe_analysis.analysis('NOZ_T2')
-anal.add_indep_var('Pressure', [-10000.0])
+anal.add_indep_var('Pressure', [10000.0])
 anal.add_indep_var('matty', ['Alloy_713LC'])
 
 #####################################################################
@@ -27,7 +27,7 @@ def define_model(self) :
     IN = 0
     OUT = 1
 
-    common_params =  { 'PRES': 0.0, 'THICK': 1.0 }
+    common_params =  { 'PRES' : 0.0, 'VOL_FRAC' : 1.0, 'TEMP' : 0.0 }
 
     # FROM CALCULIX MANUAL...
     #  face 1: 1-2-3-4 -> FTAGS.MIN_W - 1
@@ -47,6 +47,7 @@ def define_model(self) :
 
     tzs = 10.0
     tze = 11.0
+    
     thref = 1.0
 
     hinge_x = 9.0
@@ -64,7 +65,7 @@ def define_model(self) :
     sy = [ tys, tys ]
     ey = [ tye, tye ]
 
-    # ALWAYS ADD THE Z THICKNESS TO THE OUT SURFACE
+    # ALWAYS ADD THE Z THICKNESS TO THE IN SURFACE TO GET THE OUT SURFACE
     sz = [ tzs, tzs + thref ]
     ez = [ hinge_z, hinge_z + thref]
 
@@ -155,7 +156,7 @@ def define_model(self) :
     sy = [ tys, tys ]
     ey = [ tye, tye ]
 
-    # ALWAYS ADD THE Z THICKNESS TO THE OUT SURFACE
+    # ALWAYS ADD THE Z THICKNESS TO THE IN SURFACE TO GET THE OUT SURFACE
     sz = [ hinge_z, hinge_z + thref ]
     ez = [ ring_z, ring_z + thref]
 
@@ -245,18 +246,19 @@ def define_model(self) :
     sy = [ tys, tys ]
     ey = [ tye, tye ]
 
-    # ALWAYS ADD THE Z THICKNESS TO THE OUT SURFACE
+    # ALWAYS ADD THE Z THICKNESS TO THE IN SURFACE TO GET THE OUT SURFACE
     sz = [ ring_z, ring_z + thref ]
-    ez = [ tze, tze + thref/2.0 ]
+    #ez = [ tze + thref/4.0, tze + thref - thref/4.0 ]
+    ez = [ tze, tze + thref - thref/2.0 ]
 
     
     p1 = point(sx[IN], sy[IN], sz[IN], common_params)
-    p2 = point(ex[IN], sy[IN], ez[IN], common_params)
-    p3 = point(ex[IN], ey[IN], ez[IN], common_params)
+    p2 = point(ex[IN], sy[IN], ez[IN], dict( common_params.items() + {'VOL_FRAC':0.6}.items() ) ) # OVERRIDE VOL_FRAC PARAMETER
+    p3 = point(ex[IN], ey[IN], ez[IN], dict( common_params.items() + {'VOL_FRAC':0.6}.items() ) )
     p4 = point(sx[IN], ey[IN], sz[IN], common_params)
     p5 = point(sx[OUT], sy[OUT], sz[OUT], common_params)
-    p6 = point(ex[OUT], sy[OUT], ez[OUT], common_params)
-    p7 = point(ex[OUT], ey[OUT], ez[OUT], common_params)
+    p6 = point(ex[OUT], sy[OUT], ez[OUT], dict( common_params.items() + {'VOL_FRAC':0.6}.items() ) )
+    p7 = point(ex[OUT], ey[OUT], ez[OUT], dict( common_params.items() + {'VOL_FRAC':0.6}.items() ) )
     p8 = point(sx[OUT], ey[OUT], sz[OUT], common_params)
 
     # PUT PRESSURE ON MIN_W FACE - FACE #1 - SEE FIGURE BELOW
@@ -347,11 +349,18 @@ def define_model(self) :
                         blk_b, GTAGS.MIN_U, DIR.V) 
 
 
-    self.add_butt_join('BBC', blk_b, GTAGS.MAX_U,
-                       blk_c, GTAGS.MIN_U) 
+#    self.add_butt_join('BBC', blk_b, GTAGS.MAX_U,
+#                       blk_c, GTAGS.MIN_U) 
+
+    self.add_butt_join_with_grid_omit_tags('BBC', blk_b, GTAGS.MAX_U, [GTAGS.CENTER_W],
+                                           blk_c, GTAGS.MIN_U, [GTAGS.CENTER_W] ) 
+
 
 #    self.add_rigid_join('BBC', blk_b, GTAGS.MAX_U,
 #                       blk_c, GTAGS.MIN_U) 
+  
+#    self.add_rigid_join_with_grid_omit_tags('BBC', blk_b, GTAGS.MAX_U, [GTAGS.CENTER_W],
+#                                            blk_c, GTAGS.MIN_U, [GTAGS.CENTER_W]) 
 
 
 
@@ -375,18 +384,19 @@ def define_model(self) :
 
 
     
-    ## glb = blk_b.get_grid_list_from_tags(GTAGS.MAX_U)
-    ## for g in glb :
-    ##     g.bc.add(DOF.DX)
-    ##     g.bc.add(DOF.DZ)
-    ## pass
-
-    glc = blk_c.get_grid_list_from_tags(GTAGS.MIN_U)
-    glc = blk_c.get_grid_list_from_tags(GTAGS.CENTER_W, glc)
-    for g in glc :
+    glb = blk_b.get_grid_list_from_tags(GTAGS.MAX_U)
+    glb = blk_b.get_grid_list_from_tags(GTAGS.CENTER_W, glb)
+    for g in glb :
         g.bc.add(DOF.DX)
         g.bc.add(DOF.DZ)
     pass
+
+    ## glc = blk_c.get_grid_list_from_tags(GTAGS.MIN_U)
+    ## glc = blk_c.get_grid_list_from_tags(GTAGS.CENTER_W, glc)
+    ## for g in glc :
+    ##     g.bc.add(DOF.DX)
+    ##     g.bc.add(DOF.DZ)
+    ## pass
 
     ## glc = blk_c.get_grid_list_from_tags(GTAGS.MAX_U)
     ## for g in glc :
