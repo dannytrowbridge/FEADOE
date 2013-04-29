@@ -7,7 +7,7 @@ from doe.constants import LOC, DIR, DOF, GTAGS, ETAGS, FTAGS, JTAGS
 import math
 import copy
 
-anal = doe_analysis.analysis('PLAYGROUND_1')
+anal = doe_analysis.analysis('PLAYGROUND_11')
 anal.add_indep_var('Pressure', [-10000.0])
 anal.add_indep_var('matty', ['Alloy_713LC'])
 

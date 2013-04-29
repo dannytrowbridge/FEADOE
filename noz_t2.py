@@ -8,7 +8,7 @@ from doe.constants import LOC, DIR, DOF, GTAGS, ETAGS, FTAGS, JTAGS
 import math
 import copy
 
-anal = doe_analysis.analysis('NOZ_T2')
+anal = doe_analysis.analysis('NOZ_T2_PLAY11')
 anal.add_indep_var('Pressure', [10000.0])
 anal.add_indep_var('matty', ['Alloy_713LC'])
 
@@ -42,8 +42,8 @@ def define_model(self) :
     txs = 0.0
     txe = 21.0
 
-    tys = -2.0
-    tye = 2.0
+    tys = -12.0
+    tye = 12.0
 
     tzs = 10.0
     tze = 11.0
